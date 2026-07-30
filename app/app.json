@@ -1,0 +1,9 @@
+{
+  "expo": {
+    "name": "Pocket Helper Chat",
+    "slug": "pocket-helper-chat",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light"
+  }
+}
