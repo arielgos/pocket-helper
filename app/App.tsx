@@ -5,13 +5,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
-  SafeAreaView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
 import { push, query, ref, limitToLast, onValue } from "firebase/database";
+import {
+  SafeAreaView,
+} from "react-native-safe-area-context";
 import { db } from "./src/firebase";
 import { validateMessageUnderstandability } from "./src/messageValidation";
 
