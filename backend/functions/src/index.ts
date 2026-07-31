@@ -5,6 +5,6 @@ import * as logger from "firebase-functions/logger";
 setGlobalOptions({ maxInstances: 10 });
 
 export const health = onRequest((request, response) => {
-  logger.info("Health check", { structuredData: true });
+  logger.info("Health check", { structuredData: true }, request, response);
   response.send("OK");
 });
