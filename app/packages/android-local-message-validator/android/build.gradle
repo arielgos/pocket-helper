@@ -1,0 +1,26 @@
+plugins {
+  id 'com.android.library'
+  id 'org.jetbrains.kotlin.android'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.localmessagevalidator'
+version = '1.0.0'
+
+android {
+  namespace 'expo.modules.localmessagevalidator'
+  compileSdkVersion 34
+
+  defaultConfig {
+    minSdkVersion 24
+  }
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+}
+
+dependencies {
+  implementation 'com.google.mlkit:language-id:17.0.6'
+  implementation 'com.google.mediapipe:tasks-genai:0.10.27'
+}

@@ -34,7 +34,11 @@ export default function App() {
           loading={loading}
           errorMessage={loadErrorMessage ?? composerErrorMessage}
           validationMessage={
-            validatingMessage ? t('labels.checkingMessageClarity') : null
+            validatingMessage
+              ? Platform.OS === 'android'
+                ? t('labels.checkingMessageClarityOnDevice')
+                : t('labels.checkingMessageClarity')
+              : null
           }
         />
 

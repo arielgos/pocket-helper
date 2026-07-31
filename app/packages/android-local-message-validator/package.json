@@ -1,0 +1,15 @@
+{
+  "name": "@arielgos/android-local-message-validator",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
+  "expo": {
+    "platforms": ["android"]
+  },
+  "peerDependencies": {
+    "expo": "*",
+    "expo-modules-core": "*",
+    "react-native": "*"
+  }
+}

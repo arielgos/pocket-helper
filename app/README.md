@@ -55,10 +55,11 @@ npm start
 ## How message flow works
 
 1. User types a message and taps **Send**
-2. App sends the text to Gemini for understandability validation
-3. If Gemini says the message is understandable, app writes to `/messages` in Realtime Database
-4. If not understandable, app blocks sending and shows Gemini's reason
-5. Messages are streamed live from Firebase and rendered in the chat list
+2. On Android, the app validates the text with the local ML Kit + native LLM module
+3. On non-Android platforms, the app falls back to Gemini validation
+4. If the validator says the message is understandable, app writes to `/messages` in Realtime Database
+5. If not understandable, app blocks sending and shows the reason
+6. Messages are streamed live from Firebase and rendered in the chat list
 
 ## Architecture
 
@@ -67,6 +68,28 @@ npm start
 - `src/services/` - Firebase chat access and user ID helpers
 - `src/types/` - shared domain types
 - `src/i18n/` - string catalog and translation helper
+
+## Android local validator
+
+The Android validator package lives in:
+
+- [`packages/android-local-message-validator/`](./packages/android-local-message-validator)
+
+It uses:
+
+- ML Kit language identification
+- MediaPipe LLM Inference for the on-device model
+
+This native module will only be available in a custom Android development build
+or a production build that includes the package. Expo Go will not load it.
+
+Before the Android build can validate messages locally, place a quantized
+`message-validator.task` model in the Android app's internal storage at:
+
+- `<app-internal-storage>/local-llm/message-validator.task`
+
+You can also adapt the native module to copy the model from bundled assets if
+you prefer an embedded model workflow.
 
 ## Firebase data shape
 

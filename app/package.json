@@ -15,7 +15,8 @@
     "firebase": "^12.1.0",
     "react": "18.2.0",
     "react-native": "0.74.5",
-    "react-native-safe-area-context": "^5.8.0"
+    "react-native-safe-area-context": "^5.8.0",
+    "@arielgos/android-local-message-validator": "file:./packages/android-local-message-validator"
   },
   "devDependencies": {
     "@types/react": "~18.2.79",

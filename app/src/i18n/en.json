@@ -6,6 +6,7 @@
   "labels": {
     "loadingMessages": "Loading messages...",
     "checkingMessageClarity": "Checking message clarity with Gemini...",
+    "checkingMessageClarityOnDevice": "Checking message clarity on device...",
     "emptyState": "No messages yet. Say hi 👋",
     "messagePlaceholder": "Type a message...",
     "send": "Send",

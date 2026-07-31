@@ -1,4 +1,8 @@
-import { t } from "./i18n";
+import { Platform } from 'react-native';
+import { t } from './i18n';
+import {
+  getNativeLocalMessageValidator,
+} from '@arielgos/android-local-message-validator';
 
 type GeminiTextPart = {
   text?: unknown;
@@ -53,6 +57,13 @@ function extractGeminiText(payload: GeminiResponse): string {
 export async function validateMessageUnderstandability(
   message: string,
 ): Promise<MessageValidationResult> {
+  if (Platform.OS === 'android') {
+    const nativeModule = getNativeLocalMessageValidator();
+    if (nativeModule) {
+      return nativeModule.validateMessage(message);
+    }
+  }
+
   if (!geminiApiKey) {
     throw new Error(t("errors.missingGeminiApiKey"));
   }
