@@ -1,0 +1,32 @@
+{
+  "app": {
+    "title": "Pocket Helper",
+    "subtitle": "Firebase Realtime Database"
+  },
+  "labels": {
+    "loadingMessages": "Loading messages...",
+    "checkingMessageClarity": "Checking message clarity with Gemini...",
+    "emptyState": "No messages yet. Say hi 👋",
+    "messagePlaceholder": "Type a message...",
+    "send": "Send",
+    "checking": "Checking..."
+  },
+  "errors": {
+    "messageCannotBeEmpty": "Message cannot be empty.",
+    "failedLoadMessages": "Failed to load messages: {{message}}",
+    "messageNotClearEnough": "Message is not clear enough: {{reason}}",
+    "failedValidateSend": "Failed to validate/send message: {{message}}",
+    "unknownValidationSend": "Unknown error while validating or sending message",
+    "missingFirebaseEnvVars": "Missing Firebase env vars: {{vars}}. Copy .env.example to .env and set values.",
+    "firebaseLoadFailed": "Failed to load messages: {{message}}",
+    "geminiRequestFailed": "Gemini request failed ({{status}}): {{body}}",
+    "geminiMissingParts": "Gemini response did not include content parts.",
+    "geminiEmptyContent": "Gemini response content was empty.",
+    "geminiInvalidSchema": "Gemini response JSON did not match expected schema.",
+    "missingGeminiApiKey": "Missing EXPO_PUBLIC_GEMINI_API_KEY. Add it to your .env file.",
+    "missingGeminiResponse": "Gemini response did not include text output."
+  },
+  "prompts": {
+    "messageValidation": "Decide whether this chat message is completely understandable on its own. Respond only as strict JSON with this exact shape: {\"understandable\": boolean, \"reason\": string}. If it is not understandable, provide a short reason that helps rewrite it.\n\nMessage: \"{{message}}\""
+  }
+}

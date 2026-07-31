@@ -4,6 +4,12 @@
     "slug": "pocket-helper-chat",
     "version": "1.0.0",
     "orientation": "portrait",
-    "userInterfaceStyle": "light"
+    "userInterfaceStyle": "light",
+    "ios": {
+      "bundleIdentifier": "org.arielgos.pockethelper"
+    },
+    "android": {
+      "package": "org.arielgos.pockethelper"
+    }
   }
 }

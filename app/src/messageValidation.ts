@@ -1,3 +1,5 @@
+import { t } from "./i18n";
+
 type GeminiTextPart = {
   text?: unknown;
 };
@@ -18,7 +20,7 @@ export type MessageValidationResult = {
 };
 
 const geminiApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
-const geminiModel = process.env.EXPO_PUBLIC_GEMINI_MODEL ?? 'gemini-2.0-flash';
+const geminiModel = process.env.EXPO_PUBLIC_GEMINI_MODEL ?? "gemini-3.5-flash";
 
 function normalizeJsonPayload(value: string): string {
   const codeFenceMatch = value.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -33,60 +35,58 @@ function extractGeminiText(payload: GeminiResponse): string {
   const parts = candidate?.content?.parts;
 
   if (!Array.isArray(parts)) {
-    throw new Error('Gemini response did not include content parts.');
+    throw new Error(t("errors.geminiMissingParts"));
   }
 
   const text = parts
-    .map((part) => (typeof part.text === 'string' ? part.text : ''))
-    .join('')
+    .map((part) => (typeof part.text === "string" ? part.text : ""))
+    .join("")
     .trim();
 
   if (text.length === 0) {
-    throw new Error('Gemini response content was empty.');
+    throw new Error(t("errors.geminiEmptyContent"));
   }
 
   return text;
 }
 
 export async function validateMessageUnderstandability(
-  message: string
+  message: string,
 ): Promise<MessageValidationResult> {
   if (!geminiApiKey) {
-    throw new Error(
-      'Missing EXPO_PUBLIC_GEMINI_API_KEY. Add it to your .env file.'
-    );
+    throw new Error(t("errors.missingGeminiApiKey"));
   }
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:generateContent?key=${geminiApiKey}`,
     {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
         contents: [
           {
-            role: 'user',
+            role: "user",
             parts: [
               {
-                text:
-                  'Decide whether this chat message is completely understandable on its own. ' +
-                  'Respond only as strict JSON with this exact shape: ' +
-                  '{"understandable": boolean, "reason": string}. ' +
-                  'If it is not understandable, provide a short reason that helps rewrite it.\n\n' +
-                  `Message: "${message}"`,
+                text: t("prompts.messageValidation", { message }),
               },
             ],
           },
         ],
       }),
-    }
+    },
   );
 
   if (!response.ok) {
     const bodyText = await response.text();
-    throw new Error(`Gemini request failed (${response.status}): ${bodyText}`);
+    throw new Error(
+      t("errors.geminiRequestFailed", {
+        status: String(response.status),
+        body: bodyText,
+      }),
+    );
   }
 
   const payload = (await response.json()) as GeminiResponse;
@@ -95,10 +95,10 @@ export async function validateMessageUnderstandability(
   const parsed = JSON.parse(normalized) as Partial<MessageValidationResult>;
 
   if (
-    typeof parsed.understandable !== 'boolean' ||
-    typeof parsed.reason !== 'string'
+    typeof parsed.understandable !== "boolean" ||
+    typeof parsed.reason !== "string"
   ) {
-    throw new Error('Gemini response JSON did not match expected schema.');
+    throw new Error(t("errors.geminiInvalidSchema"));
   }
 
   return {

@@ -60,6 +60,14 @@ npm start
 4. If not understandable, app blocks sending and shows Gemini's reason
 5. Messages are streamed live from Firebase and rendered in the chat list
 
+## Architecture
+
+- `src/components/` - presentational UI pieces
+- `src/hooks/` - stateful chat logic
+- `src/services/` - Firebase chat access and user ID helpers
+- `src/types/` - shared domain types
+- `src/i18n/` - string catalog and translation helper
+
 ## Firebase data shape
 
 Messages are stored under `/messages` with values like:

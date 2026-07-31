@@ -1,5 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getDatabase } from 'firebase/database';
+import { t } from './i18n';
 
 const requiredEnvVars = [
   'EXPO_PUBLIC_FIREBASE_API_KEY',
@@ -15,7 +16,7 @@ const missingEnvVars = requiredEnvVars.filter((key) => !process.env[key]);
 
 if (missingEnvVars.length > 0) {
   throw new Error(
-    `Missing Firebase env vars: ${missingEnvVars.join(', ')}. Copy .env.example to .env and set values.`
+    t('errors.missingFirebaseEnvVars', { vars: missingEnvVars.join(', ') })
   );
 }
 
