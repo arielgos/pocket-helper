@@ -72,7 +72,7 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
 function logNewMessageEvent(pushId: string, message: MessagePayload | null): void {
   logger.info("New message created", {
     pushId,
-    ...message,
+    message: message ? { ...message } : null,
   });
 }
 
