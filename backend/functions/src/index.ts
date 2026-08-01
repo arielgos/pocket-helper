@@ -5,6 +5,7 @@ import * as logger from "firebase-functions/logger";
 
 const FUNCTION_MAX_INSTANCES = 10;
 const MESSAGES_PATH = "/messages/{pushId}";
+const AUTHORIZED_USER_ID = "arielgos";
 
 /**
  * Represents the payload shape of a chat message.
@@ -106,7 +107,7 @@ export const onNewMessageCreated = onValueCreated(MESSAGES_PATH, async (event) =
     return null;
   }
 
-  if (message.userId != "arielgos") {
+  if (message.userId != AUTHORIZED_USER_ID) {
     logger.warn("Received message payload from an unauthorized user", {
       pushId,
       userId: message.userId,
