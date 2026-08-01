@@ -11,12 +11,15 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@arielgos/android-local-message-validator": "file:./packages/android-local-message-validator",
+    "@expo/metro-runtime": "~3.2.3",
     "expo": "~51.0.28",
     "firebase": "^12.1.0",
     "react": "18.2.0",
+    "react-dom": "18.2.0",
     "react-native": "0.74.5",
     "react-native-safe-area-context": "^5.8.0",
-    "@arielgos/android-local-message-validator": "file:./packages/android-local-message-validator"
+    "react-native-web": "~0.19.10"
   },
   "devDependencies": {
     "@types/react": "~18.2.79",

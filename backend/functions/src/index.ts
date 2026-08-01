@@ -12,6 +12,7 @@ const MESSAGES_PATH = "/messages/{pushId}";
 type MessagePayload = {
   text: string | null;
   userId: string | null;
+  createdAt: number | null;
   [key: string]: unknown;
 };
 
@@ -57,6 +58,7 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
   return {
     text: candidate.text ?? null,
     userId: candidate.userId ?? null,
+    createdAt: candidate.createdAt ?? null,
     ...candidate,
   } as MessagePayload;
 }
@@ -69,8 +71,7 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
 function logNewMessageEvent(pushId: string, message: MessagePayload | null): void {
   logger.info("New message created", {
     pushId,
-    hasText: Boolean(message?.text),
-    hasUserId: Boolean(message?.userId),
+    ...message,
   });
 }
 
