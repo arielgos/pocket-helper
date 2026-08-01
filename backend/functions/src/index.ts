@@ -3,41 +3,73 @@ import { onRequest } from "firebase-functions/v2/https";
 import { onValueCreated } from "firebase-functions/v2/database";
 import * as logger from "firebase-functions/logger";
 
-// Configure global options for v2 functions
-setGlobalOptions({ maxInstances: 10 });
+const FUNCTION_MAX_INSTANCES = 10;
+const MESSAGES_PATH = "/messages/{pushId}";
 
-export const health = onRequest((request, response) => {
-  // Log request details safely (do NOT pass raw request or response objects)
+type MessagePayload = {
+  text?: string | null;
+  [key: string]: unknown;
+};
+
+type RequestMetadata = {
+  method: string;
+  path: string;
+};
+
+// Configure global options for v2 functions
+setGlobalOptions({ maxInstances: FUNCTION_MAX_INSTANCES });
+
+function logHealthCheck(request: RequestMetadata): void {
   logger.info("Health check received", {
     method: request.method,
     path: request.path,
   });
+}
 
-  response.send("OK");
+function normalizeMessagePayload(value: unknown): MessagePayload | null {
+  if (typeof value !== "object" || value === null) {
+    return null;
+  }
+
+  return value as MessagePayload;
+}
+
+function logNewMessageEvent(pushId: string, message: MessagePayload | null): void {
+  logger.info("New message created", {
+    pushId,
+    hasText: Boolean(message?.text),
+  });
+}
+
+export const health = onRequest((request, response) => {
+  logHealthCheck({
+    method: request.method,
+    path: request.path,
+  });
+
+  response.status(200).send("OK");
 });
 
-// Realtime Database onCreate trigger - fires on every new insert
-export const onNewMessageCreated = onValueCreated(
-  "/messages/{pushId}",
-  async (event) => {
-    // 1. Guard against empty data snapshots
-    if (!event.data.exists()) {
-      return null;
-    }
+export const onNewMessageCreated = onValueCreated(MESSAGES_PATH, async (event) => {
+  if (!event.data.exists()) {
+    return null;
+  }
 
-    // 2. Correct access to the DataSnapshot value
-    const newData = event.data.val();
-    const pushId = event.params.pushId;
+  const pushId = event.params.pushId;
+  const message = normalizeMessagePayload(event.data.val());
 
-    // 3. Log safely (avoid logging sensitive full message payloads)
-    logger.info("New message created", {
+  if (!message) {
+    logger.warn("Received message payload with an unexpected format", {
       pushId,
-      hasText: Boolean(newData?.text), // example safe logging
     });
 
-    // 4. Perform your async tasks here, for example:
-    // await sendNotification(pushId, newData);
-
     return null;
-  },
-);
+  }
+
+  logNewMessageEvent(pushId, message);
+
+  // Add future async work here, for example:
+  // await sendNotification(pushId, message);
+
+  return null;
+});
