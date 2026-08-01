@@ -6,6 +6,9 @@ import * as logger from "firebase-functions/logger";
 const FUNCTION_MAX_INSTANCES = 10;
 const MESSAGES_PATH = "/messages/{pushId}";
 
+/**
+ * Represents the payload shape of a chat message.
+ */
 type MessagePayload = {
   text?: string | null;
   [key: string]: unknown;
@@ -19,6 +22,10 @@ type RequestMetadata = {
 // Configure global options for v2 functions
 setGlobalOptions({ maxInstances: FUNCTION_MAX_INSTANCES });
 
+/**
+ * Logs the health check request metadata.
+ * @param {RequestMetadata} request The request metadata to log.
+ */
 function logHealthCheck(request: RequestMetadata): void {
   logger.info("Health check received", {
     method: request.method,
@@ -26,6 +33,11 @@ function logHealthCheck(request: RequestMetadata): void {
   });
 }
 
+/**
+ * Normalizes an unknown value into a message payload.
+ * @param {unknown} value The raw value from the database snapshot.
+ * @return {MessagePayload | null} A normalized message payload or null.
+ */
 function normalizeMessagePayload(value: unknown): MessagePayload | null {
   if (typeof value !== "object" || value === null) {
     return null;
@@ -34,6 +46,11 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
   return value as MessagePayload;
 }
 
+/**
+ * Logs the new message event in a safe way.
+ * @param {string} pushId The database push ID for the message.
+ * @param {MessagePayload | null} message The normalized message payload.
+ */
 function logNewMessageEvent(pushId: string, message: MessagePayload | null): void {
   logger.info("New message created", {
     pushId,
@@ -41,6 +58,9 @@ function logNewMessageEvent(pushId: string, message: MessagePayload | null): voi
   });
 }
 
+/**
+ * Exposes a simple health endpoint for monitoring.
+ */
 export const health = onRequest((request, response) => {
   logHealthCheck({
     method: request.method,
@@ -50,6 +70,9 @@ export const health = onRequest((request, response) => {
   response.status(200).send("OK");
 });
 
+/**
+ * Handles newly created messages in the Realtime Database.
+ */
 export const onNewMessageCreated = onValueCreated(MESSAGES_PATH, async (event) => {
   if (!event.data.exists()) {
     return null;
