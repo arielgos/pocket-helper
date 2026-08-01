@@ -10,7 +10,8 @@ const MESSAGES_PATH = "/messages/{pushId}";
  * Represents the payload shape of a chat message.
  */
 type MessagePayload = {
-  text?: string | null;
+  text: string | null;
+  userId: string | null;
   [key: string]: unknown;
 };
 
@@ -43,7 +44,21 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
     return null;
   }
 
-  return value as MessagePayload;
+  const candidate = value as Partial<MessagePayload>;
+
+  if (typeof candidate.text !== "string" && candidate.text !== null) {
+    return null;
+  }
+
+  if (typeof candidate.userId !== "string" && candidate.userId !== null) {
+    return null;
+  }
+
+  return {
+    text: candidate.text ?? null,
+    userId: candidate.userId ?? null,
+    ...candidate,
+  } as MessagePayload;
 }
 
 /**
@@ -55,6 +70,7 @@ function logNewMessageEvent(pushId: string, message: MessagePayload | null): voi
   logger.info("New message created", {
     pushId,
     hasText: Boolean(message?.text),
+    hasUserId: Boolean(message?.userId),
   });
 }
 
@@ -86,6 +102,14 @@ export const onNewMessageCreated = onValueCreated(MESSAGES_PATH, async (event) =
       pushId,
     });
 
+    return null;
+  }
+
+  if (message.userId != "arielgos") {
+    logger.warn("Received message payload from an unauthorized user", {
+      pushId,
+      userId: message.userId,
+    });
     return null;
   }
 
