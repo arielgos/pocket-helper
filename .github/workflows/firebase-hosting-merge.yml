@@ -18,7 +18,7 @@ jobs:
 
       - name: Install dependencies and build
         run: |
-          cd hosting
+          cd backend/hosting
           npm install
           npm run build
 
