@@ -7,15 +7,23 @@ on:
     branches:
       - master
     paths:
-      - 'backend/hosting/**'
-      - 'backend/firebase.json'
+      - "backend/hosting/**"
+
 jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: npm ci && npm run build
-      - uses: FirebaseExtended/action-hosting-deploy@v0
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies and build
+        run: |
+          cd hosting
+          npm install
+          npm run build
+
+      - name: Deploy
+        uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_POCKET_HELPER_A4BC4 }}

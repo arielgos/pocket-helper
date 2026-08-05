@@ -2,9 +2,10 @@ name: Deploy Firebase Functions on change
 
 on:
   push:
+    branches:
+      - master
     paths:
       - "backend/functions/**"
-  workflow_dispatch:
 
 jobs:
   deploy_functions:

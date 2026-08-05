@@ -1,5 +1,7 @@
 {
   "name": "functions",
+  "license": "MIT",
+  "private": true,
   "scripts": {
     "lint": "eslint --ext .js,.ts .",
     "build": "tsc",
@@ -27,6 +29,5 @@
     "eslint-plugin-import": "^2.25.4",
     "firebase-functions-test": "^3.4.1",
     "typescript": "^6.0.0"
-  },
-  "private": true
+  }
 }
