@@ -29,3 +29,4 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_POCKET_HELPER_A4BC4 }}
           channelId: live
           projectId: pocket-helper-a4bc4
+          entryPoint: ../../backend/hosting
