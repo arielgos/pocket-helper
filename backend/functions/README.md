@@ -1,102 +1,52 @@
-# Firebase Functions - Realtime Database Triggers
+# Firebase Functions - Message Processing
 
-This document explains how to implement Firebase Realtime Database triggers in your Firebase Functions v2 environment.
+This directory contains the Firebase Functions implementation for processing chat messages.
 
-## Overview
+## Features
 
-Firebase Functions v2 provides support for Realtime Database triggers that can respond to data creation, updates, and deletions in your Firebase Realtime Database.
+### Gemini API Integration
+The system now includes functionality to:
+1. Query the Google Gemini API for message descriptions
+2. Validate posts against web articles
 
-## Available Triggers
+### New Functions
 
-- `onValueCreated()` - Triggered when data is created in Realtime Database
-- `onValueUpdated()` - Triggered when data is updated in Realtime Database  
-- `onValueDeleted()` - Triggered when data is deleted from Realtime Database
-- `onValueWritten()` - Triggered when data is created, updated, or deleted
+#### `queryGeminiForDescription(messageText: string)`: 
+Generates a concise description for a message using the Gemini API.
 
-## Implementation Examples
+#### `validatePostAgainstWebArticles(messageText: string)`:
+Validates message content against web articles for factual accuracy.
 
-### Basic onCreate Trigger
+## Environment Variables Required
 
-```typescript
-import { onValueCreated } from "firebase-functions/v2/database";
-import * as logger from "firebase-functions/logger";
-import admin from "firebase-admin";
+- `GEMINI_API_KEY`: API key for accessing the Google Gemini API
 
-// Initialize Firebase Admin SDK
-admin.initializeApp();
+## Implementation Details
 
-export const onNewMessageCreated = onValueCreated(
-  "/messages/{pushId}",
-  (event) => {
-    // Get the data that was created
-    const newData = event.data.after.val();
-    
-    // Log the creation event
-    logger.info("New message created", {
-      pushId: event.params.pushId,
-      data: newData
-    });
-    
-    // Process the new data as needed
-    return null;
-  }
-);
-```
+The system processes new messages in the Realtime Database and:
+1. Validates that messages come from authorized users (arielgos)
+2. Generates descriptions using the Gemini API
+3. Validates posts against web articles for content verification
 
-### Wildcard Path Matching
+## Deployment Notes
 
-```typescript
-// This will match any creation in /users/{userId}/messages/{messageId}
-export const onUserMessageCreated = onValueCreated(
-  "/users/{userId}/messages/{messageId}",
-  (event) => {
-    const messageData = event.data.after.val();
-    
-    logger.info("User message created", {
-      userId: event.params.userId,
-      messageId: event.params.messageId,
-      data: messageData
-    });
-    
-    return null;
-  }
-);
-```
+When deploying to Firebase, ensure the `GEMINI_API_KEY` environment variable is set in your Firebase project configuration.
 
-### Handling Data Changes
+## Functionality
 
-```typescript
-// This example shows how to handle data changes with before/after snapshots
-import { onValueWritten } from "firebase-functions/v2/database";
+### Health Endpoint
+- `health` - HTTP endpoint for monitoring system status
 
-export const onMessageUpdated = onValueWritten(
-  "/messages/{pushId}",
-  (event) => {
-    const beforeData = event.data.before.val();
-    const afterData = event.data.after.val();
-    
-    // Only process if this is a creation (before data doesn't exist)
-    if (!beforeData && afterData) {
-      logger.info("New message created", {
-        pushId: event.params.pushId,
-        data: afterData
-      });
-    }
-    
-    return null;
-  }
-);
-```
+### Message Processing
+- `onNewMessageCreated` - Realtime Database trigger that:
+  - Validates messages come from authorized user (arielgos)
+  - Queries Gemini API for message descriptions
+  - Validates posts against web articles
+  - Logs all operations for monitoring and debugging
 
-## Deployment
+## Dependencies
 
-To deploy your database triggers, run:
-
-```bash
-cd backend/functions
-npm run build
-firebase deploy --only functions
-```
+- `node-fetch` - For making HTTP requests to the Gemini API
 
 ## Best Practices
 
