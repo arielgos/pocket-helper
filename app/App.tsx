@@ -5,6 +5,7 @@ import { ChatHeader } from './src/components/ChatHeader';
 import { ChatMessageList } from './src/components/ChatMessageList';
 import { ChatStatusBanner } from './src/components/ChatStatusBanner';
 import { CommandHelpModal } from './src/components/CommandHelpModal';
+import { SessionsModal } from './src/components/SessionsModal';
 import { t } from './src/i18n';
 import { useChatMessages } from './src/hooks/useChatMessages';
 import { useMessageComposer } from './src/hooks/useMessageComposer';
@@ -23,6 +24,9 @@ export default function App() {
     sendMessage,
     showCommandHelp,
     setShowCommandHelp,
+    showSessionsList,
+    setShowSessionsList,
+    sessionsList,
   } = useMessageComposer(currentUserId);
 
   return (
@@ -60,6 +64,12 @@ export default function App() {
         <CommandHelpModal
           visible={showCommandHelp}
           onClose={() => setShowCommandHelp(false)}
+        />
+        
+        <SessionsModal
+          visible={showSessionsList}
+          onClose={() => setShowSessionsList(false)}
+          sessions={sessionsList}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

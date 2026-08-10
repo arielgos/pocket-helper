@@ -15,7 +15,10 @@
     "commandHelpDescription": "Use these commands to interact with the chat:",
     "commandHelpCommand": "Command",
     "commandHelpDescriptionColon": "Description:",
-    "commandHelpClose": "Close"
+    "commandHelpClose": "Close",
+    "sessionsListTitle": "Chat Sessions",
+    "sessionsListDescription": "Available sessions in your chat history:",
+    "noSessions": "No sessions found"
   },
   "errors": {
     "messageCannotBeEmpty": "Message cannot be empty.",
@@ -33,7 +36,13 @@
     "missingGeminiResponse": "Gemini response did not include text output.",
     "commandNotFound": "Command not found: {{command}}",
     "commandHelpTitle": "Command Help",
-    "failedClearMessages": "Failed to clear messages: {{message}}"
+    "failedClearMessages": "Failed to clear messages: {{message}}",
+    "noSessionsFound": "No chat sessions found.",
+    "sessionsList": "Found {{count}} session(s).",
+    "sessionNameRequired": "Session name is required.",
+    "failedCreateSession": "Failed to create session: {{message}}",
+    "sessionCreated": "Session '{{name}}' created and activated.",
+    "sessionSwitched": "Switched to session '{{name}}'."
   },
   "commands": {
     "help": {
@@ -47,6 +56,14 @@
     "clear": {
       "description": "Clear all messages from chat",
       "usage": "/clear"
+    },
+    "sessions": {
+      "description": "List all chat sessions",
+      "usage": "/sessions"
+    },
+    "session": {
+      "description": "Create a new chat session",
+      "usage": "/session <name>"
     }
   },
   "prompts": {

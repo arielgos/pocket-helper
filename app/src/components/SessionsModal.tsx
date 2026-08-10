@@ -1,12 +1,13 @@
 import { StyleSheet, Text, View, Modal, Pressable } from "react-native";
 import { t } from "../i18n";
 
-type CommandHelpModalProps = {
+type SessionsModalProps = {
   visible: boolean;
   onClose: () => void;
+  sessions: { id: string; name: string; createdAt: number }[];
 };
 
-export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
+export function SessionsModal({ visible, onClose, sessions }: SessionsModalProps) {
   return (
     <Modal
       animationType="slide"
@@ -16,43 +17,26 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
     >
       <View style={styles.centeredView}>
         <View style={styles.modalView}>
-          <Text style={styles.modalTitle}>{t("labels.commandHelpTitle")}</Text>
+          <Text style={styles.modalTitle}>{t("labels.sessionsListTitle")}</Text>
           <Text style={styles.modalDescription}>
-            {t("labels.commandHelpDescription")}
+            {t("labels.sessionsListDescription")}
           </Text>
-
-          <View style={styles.commandList}>
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.help.usage")} - {t("commands.help.description")}
-              </Text>
+          
+          {sessions.length > 0 ? (
+            <View style={styles.sessionList}>
+              {sessions.map((session) => (
+                <View key={session.id} style={styles.sessionItem}>
+                  <Text style={styles.sessionName}>{session.name}</Text>
+                  <Text style={styles.sessionDate}>
+                    {new Date(session.createdAt).toLocaleDateString()}
+                  </Text>
+                </View>
+              ))}
             </View>
-
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.echo.usage")} - {t("commands.echo.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.clear.usage")} - {t("commands.clear.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.sessions.usage")} - {t("commands.sessions.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.session.usage")} - {t("commands.session.description")}
-              </Text>
-            </View>
-          </View>
-
+          ) : (
+            <Text style={styles.noSessions}>{t("labels.noSessions")}</Text>
+          )}
+          
           <Pressable style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>
               {t("labels.commandHelpClose")}
@@ -102,28 +86,40 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#00ff00",
   },
-  commandList: {
+  sessionList: {
     width: "100%",
     marginBottom: 20,
   },
-  commandItem: {
+  sessionItem: {
     marginBottom: 10,
-    padding: 8,
+    padding: 12,
     backgroundColor: "#001a00",
     borderRadius: 4,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  commandText: {
+  sessionName: {
     fontSize: 16,
-    textAlign: "left",
     color: "#00ff00",
-    fontFamily: "monospace",
+    fontWeight: "500",
+  },
+  sessionDate: {
+    fontSize: 12,
+    color: "#00ff00",
+    opacity: 0.7,
+  },
+  noSessions: {
+    fontSize: 14,
+    color: "#00ff00",
+    textAlign: "center",
+    marginBottom: 20,
   },
   closeButton: {
-    backgroundColor: "#003300",
+    backgroundColor: "#001a00",
     borderRadius: 0,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    justifyContent: "center",
+    padding: 10,
+    elevation: 2,
     width: "100%",
     alignItems: "center",
     borderWidth: 1,
@@ -131,6 +127,6 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     color: "#00ff00",
-    fontWeight: "600",
+    fontWeight: "bold",
   },
 });
