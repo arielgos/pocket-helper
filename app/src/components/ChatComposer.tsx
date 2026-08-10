@@ -1,5 +1,5 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { t } from '../i18n';
+import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { t } from "../i18n";
 
 type ChatComposerProps = {
   inputValue: string;
@@ -21,7 +21,7 @@ export function ChatComposer({
       <TextInput
         value={inputValue}
         onChangeText={onChangeText}
-        placeholder={t('labels.messagePlaceholder')}
+        placeholder={t("labels.messagePlaceholder")}
         style={styles.input}
         autoCorrect
         editable={!validatingMessage}
@@ -35,7 +35,7 @@ export function ChatComposer({
         disabled={!canSend}
       >
         <Text style={styles.sendButtonText}>
-          {validatingMessage ? t('labels.checking') : t('labels.send')}
+          {validatingMessage ? t("labels.checking") : t("labels.send")}
         </Text>
       </Pressable>
     </View>
@@ -47,10 +47,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
-    flexDirection: 'row',
-    alignItems: 'center',
+    borderTopColor: "#00ff00",
+    backgroundColor: "#000000",
+    flexDirection: "row",
+    alignItems: "center",
     gap: 10,
   },
   input: {
@@ -58,24 +58,25 @@ const styles = StyleSheet.create({
     minHeight: 56,
     maxHeight: 120,
     borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 10,
+    borderColor: "#00ff00",
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#000000",
+    color: "#00ff00",
   },
   sendButton: {
-    backgroundColor: '#2563eb',
-    borderRadius: 10,
+    backgroundColor: "#003300",
+    borderRadius: 0,
     paddingHorizontal: 16,
-    minHeight: 56,
-    justifyContent: 'center',
+    minHeight: 94,
+    justifyContent: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: '#93c5fd',
+    backgroundColor: "#002200",
   },
   sendButtonText: {
-    color: '#ffffff',
-    fontWeight: '600',
+    color: "#00ff00",
+    fontWeight: "600",
   },
 });

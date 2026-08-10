@@ -17,7 +17,7 @@ export function ChatStatusBanner({
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" />
+        <ActivityIndicator size="large" color="#00ff00" />
         <Text style={styles.loadingText}>
           {loadingMessage ?? t('labels.loadingMessages')}
         </Text>
@@ -43,14 +43,16 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 12,
     padding: 10,
-    backgroundColor: '#fef2f2',
-    color: '#b91c1c',
+    backgroundColor: '#000000',
+    color: '#ff0000',
     borderRadius: 8,
+    borderColor: '#ff0000',
+    borderWidth: 1,
   },
   validationInfo: {
     marginHorizontal: 12,
     marginTop: 8,
-    color: '#1d4ed8',
+    color: '#00ff00',
     fontSize: 13,
   },
   loadingContainer: {
@@ -60,6 +62,6 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 8,
-    color: '#374151',
+    color: '#00ff00',
   },
 });

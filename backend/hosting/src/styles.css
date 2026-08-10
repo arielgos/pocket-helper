@@ -5,7 +5,8 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #f5f5f5;
+  background-color: #000000;
+  color: #00ff00;
 }
 
 .app {
@@ -15,10 +16,11 @@ body {
 }
 
 .app-header {
-  background-color: #282c34;
+  background-color: #000000;
   padding: 20px;
-  color: white;
+  color: #00ff00;
   text-align: center;
+  border-bottom: 1px solid #00ff00;
 }
 
 .chat-container {
@@ -36,17 +38,22 @@ body {
   overflow-y: auto;
   margin-bottom: 20px;
   padding: 10px;
-  background-color: white;
+  background-color: #000000;
   border-radius: 8px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  border: 1px solid #00ff00;
 }
 
 .message {
   padding: 15px;
   margin-bottom: 10px;
   border-radius: 8px;
-  background-color: #f9f9f9;
-  border-left: 4px solid #007bff;
+  background-color: #000000;
+  border-left: 4px solid #00ff00;
+}
+
+.message-text {
+  color: #00ff00;
 }
 
 .message-header {

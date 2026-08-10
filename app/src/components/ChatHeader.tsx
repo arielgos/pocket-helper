@@ -15,17 +15,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-    backgroundColor: '#ffffff',
+    borderBottomColor: '#00ff00',
+    backgroundColor: '#000000',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: '#00ff00',
   },
   subtitle: {
     marginTop: 2,
     fontSize: 13,
-    color: '#6b7280',
+    color: '#00ff00',
   },
 });

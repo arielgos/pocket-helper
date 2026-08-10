@@ -1,7 +1,7 @@
 {
   "app": {
     "title": "Pocket Helper",
-    "subtitle": "Firebase Realtime Database"
+    "subtitle": "Kotlin, TypeScript, Firebase Realtime Database, Gemini, and React Native"
   },
   "labels": {
     "loadingMessages": "Loading messages...",

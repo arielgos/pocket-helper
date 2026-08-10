@@ -52,40 +52,40 @@ const styles = StyleSheet.create({
   },
   messageBubble: {
     maxWidth: '80%',
-    borderRadius: 12,
+    borderRadius: 0,
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginVertical: 2,
   },
   myMessage: {
     alignSelf: 'flex-end',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#002200',
   },
   otherMessage: {
     alignSelf: 'flex-start',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#00ff00',
   },
   messageText: {
-    color: '#111827',
+    color: '#00ff00',
     fontSize: 15,
   },
   myMessageText: {
-    color: '#ffffff',
+    color: '#00ff00',
   },
   messageMeta: {
     marginTop: 4,
     fontSize: 11,
-    color: '#6b7280',
+    color: '#00ff00',
     textAlign: 'right',
   },
   myMessageMeta: {
-    color: '#dbeafe',
+    color: '#00ff00',
   },
   emptyState: {
     textAlign: 'center',
-    color: '#6b7280',
+    color: '#00ff00',
     paddingVertical: 30,
   },
 });
