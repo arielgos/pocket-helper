@@ -10,7 +10,12 @@
     "emptyState": "No messages yet. Say hi 👋",
     "messagePlaceholder": "Type a message...",
     "send": "Send",
-    "checking": "Checking..."
+    "checking": "Checking...",
+    "commandHelpTitle": "Available Commands",
+    "commandHelpDescription": "Use these commands to interact with the chat:",
+    "commandHelpCommand": "Command",
+    "commandHelpDescriptionColon": "Description:",
+    "commandHelpClose": "Close"
   },
   "errors": {
     "messageCannotBeEmpty": "Message cannot be empty.",
@@ -25,7 +30,24 @@
     "geminiEmptyContent": "Gemini response content was empty.",
     "geminiInvalidSchema": "Gemini response JSON did not match expected schema.",
     "missingGeminiApiKey": "Missing EXPO_PUBLIC_GEMINI_API_KEY. Add it to your .env file.",
-    "missingGeminiResponse": "Gemini response did not include text output."
+    "missingGeminiResponse": "Gemini response did not include text output.",
+    "commandNotFound": "Command not found: {{command}}",
+    "commandHelpTitle": "Command Help",
+    "failedClearMessages": "Failed to clear messages: {{message}}"
+  },
+  "commands": {
+    "help": {
+      "description": "Show available commands",
+      "usage": "/help"
+    },
+    "echo": {
+      "description": "Echo a message back to chat",
+      "usage": "/echo [message]"
+    },
+    "clear": {
+      "description": "Clear all messages from chat",
+      "usage": "/clear"
+    }
   },
   "prompts": {
     "messageValidation": "Decide whether this chat message is completely understandable on its own. Respond only as strict JSON with this exact shape: {\"understandable\": boolean, \"reason\": string}. If it is not understandable, provide a short reason that helps rewrite it.\n\nMessage: \"{{message}}\""

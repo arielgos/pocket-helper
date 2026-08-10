@@ -1,4 +1,4 @@
-import { push, query, ref, limitToLast, onValue } from 'firebase/database';
+import { push, query, ref, limitToLast, onValue, set } from 'firebase/database';
 import { db } from '../firebase';
 import { ChatMessage, RawChatMessage } from '../types/chat';
 
@@ -69,4 +69,9 @@ export async function sendChatMessage(params: {
     createdAt: Date.now(),
     userId: params.userId,
   });
+}
+
+export async function clearAllMessages(): Promise<void> {
+  const messagesRef = ref(db, 'messages');
+  await set(messagesRef, null);
 }

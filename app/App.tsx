@@ -4,6 +4,7 @@ import { ChatComposer } from './src/components/ChatComposer';
 import { ChatHeader } from './src/components/ChatHeader';
 import { ChatMessageList } from './src/components/ChatMessageList';
 import { ChatStatusBanner } from './src/components/ChatStatusBanner';
+import { CommandHelpModal } from './src/components/CommandHelpModal';
 import { t } from './src/i18n';
 import { useChatMessages } from './src/hooks/useChatMessages';
 import { useMessageComposer } from './src/hooks/useMessageComposer';
@@ -20,6 +21,8 @@ export default function App() {
     errorMessage: composerErrorMessage,
     canSend,
     sendMessage,
+    showCommandHelp,
+    setShowCommandHelp,
   } = useMessageComposer(currentUserId);
 
   return (
@@ -52,6 +55,11 @@ export default function App() {
           onSend={sendMessage}
           canSend={canSend}
           validatingMessage={validatingMessage}
+        />
+        
+        <CommandHelpModal
+          visible={showCommandHelp}
+          onClose={() => setShowCommandHelp(false)}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

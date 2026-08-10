@@ -1,5 +1,5 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
-import { t } from '../i18n';
+import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { t } from "../i18n";
 
 type ChatStatusBannerProps = {
   loading: boolean;
@@ -19,7 +19,7 @@ export function ChatStatusBanner({
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#00ff00" />
         <Text style={styles.loadingText}>
-          {loadingMessage ?? t('labels.loadingMessages')}
+          {loadingMessage ?? t("labels.loadingMessages")}
         </Text>
       </View>
     );
@@ -43,25 +43,25 @@ const styles = StyleSheet.create({
     marginHorizontal: 12,
     marginTop: 12,
     padding: 10,
-    backgroundColor: '#000000',
-    color: '#ff0000',
+    backgroundColor: "#000000",
+    color: "#ff0000",
     borderRadius: 8,
-    borderColor: '#ff0000',
+    borderColor: "#ff0000",
     borderWidth: 1,
   },
   validationInfo: {
     marginHorizontal: 12,
     marginTop: 8,
-    color: '#00ff00',
+    color: "#00ff00",
     fontSize: 13,
   },
   loadingContainer: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   loadingText: {
     marginTop: 8,
-    color: '#00ff00',
+    color: "#00ff00",
   },
 });
