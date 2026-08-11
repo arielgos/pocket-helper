@@ -1,5 +1,4 @@
 import { StyleSheet, Text, View } from "react-native";
-import { useEffect } from "react";
 import { t } from "../i18n";
 import { useSession } from "../context/SessionContext";
 

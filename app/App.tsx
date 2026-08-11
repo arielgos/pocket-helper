@@ -10,7 +10,7 @@ import { t } from "./src/i18n";
 import { useChatMessages } from "./src/hooks/useChatMessages";
 import { useMessageComposer } from "./src/hooks/useMessageComposer";
 import { createCurrentUserId } from "./src/services/chatService";
-import { SessionProvider, useSession } from "./src/context/SessionContext";
+import { SessionProvider } from "./src/context/SessionContext";
 
 const currentUserId = createCurrentUserId();
 

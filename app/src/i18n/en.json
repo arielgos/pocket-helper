@@ -64,7 +64,7 @@
       "usage": "/sessions"
     },
     "session": {
-      "description": "Create a new chat session",
+      "description": "Create/Open a chat session",
       "usage": "/session <name>"
     },
     "post": {

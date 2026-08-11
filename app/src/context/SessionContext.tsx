@@ -8,6 +8,7 @@ import React, {
 import {
   getCurrentSessionId,
   getAllSessions,
+  setCurrentSession,
 } from "../services/sessionService";
 
 // Define the session context type
@@ -16,6 +17,7 @@ interface SessionContextType {
   currentSessionName: string | null;
   sessions: any[];
   refreshSessions: () => Promise<void>;
+  switchSession: (sessionId: string) => Promise<void>;
 }
 
 // Create the session context with default values
@@ -48,13 +50,6 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
       if (sessionId === "default") {
         setCurrentSessionName("Default Session");
       } else {
-        if (sessions.length > 0) {
-          const session = sessions.find((s) => s.id === sessionId);
-          if (session) {
-            setCurrentSessionName(session.name);
-            return;
-          }
-        }
         // In a real implementation, you'd fetch the session name from Firebase
         setCurrentSessionName(`Session-${sessionId}`);
       }
@@ -76,20 +71,35 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({
     }
   }, []);
 
+  // Switch session
+  const switchSession = useCallback(async (sessionId: string) => {
+    try {
+      await setCurrentSession(sessionId);
+      setCurrentSessionId(sessionId);
+
+      // Update session name
+      if (sessionId === "default") {
+        setCurrentSessionName("Default Session");
+      } else {
+        setCurrentSessionName(`Session-${sessionId}`);
+      }
+    } catch (error) {
+      console.error("Failed to switch session:", error);
+    }
+  }, []);
+
   // Initialize session data
   useEffect(() => {
     fetchCurrentSessionName();
     refreshSessions();
   }, [fetchCurrentSessionName, refreshSessions]);
 
-  // For demonstration purposes, we'll simulate session changes
-  // In a real app, you would set up Firebase listeners here
-
   const value = {
     currentSessionId,
     currentSessionName,
     sessions,
     refreshSessions,
+    switchSession,
   };
 
   return (
