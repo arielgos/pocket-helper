@@ -27,6 +27,12 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
                 {t("commands.help.usage")} - {t("commands.help.description")}
               </Text>
             </View>
+            
+            <View style={styles.commandItem}>
+              <Text style={styles.commandText}>
+                {t("commands.clear.usage")} - {t("commands.clear.description")}
+              </Text>
+            </View>
 
             <View style={styles.commandItem}>
               <Text style={styles.commandText}>
@@ -36,7 +42,7 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
             
             <View style={styles.commandItem}>
               <Text style={styles.commandText}>
-                {t("commands.clear.usage")} - {t("commands.clear.description")}
+                {t("commands.session.usage")} - {t("commands.session.description")}
               </Text>
             </View>
             
@@ -48,7 +54,7 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
             
             <View style={styles.commandItem}>
               <Text style={styles.commandText}>
-                {t("commands.session.usage")} - {t("commands.session.description")}
+                {t("commands.remove.usage")} - {t("commands.remove.description")}
               </Text>
             </View>
             

@@ -7,6 +7,7 @@ import {
 } from "../services/chatService";
 import {
   createSession,
+  deleteSession,
 } from "../services/sessionService";
 import { useSession } from "../context/SessionContext";
 
@@ -117,6 +118,36 @@ export function useMessageComposer(userId: string) {
           setInputValue("");
           return;
         }
+      }
+
+      // Handle /remove command
+      if (command === "/remove") {
+        try {
+          // Prevent deletion of default session
+          if (currentSessionId === "default") {
+            setErrorMessage(t("errors.cannotDeleteDefaultSession"));
+            setInputValue("");
+            return;
+          }
+
+          // Delete the current session
+          await deleteSession(currentSessionId);
+          
+          // Switch back to default session
+          await switchSession("default");
+          
+          setErrorMessage(t("errors.sessionDeleted"));
+          setInputValue("");
+          return;
+        } catch (error) {
+          const message =
+            error instanceof Error
+              ? error.message
+              : t("errors.unknownValidationSend");
+          setErrorMessage(t("errors.failedValidateSend", { message }));
+        }
+        setInputValue("");
+        return;
       }
 
       // Handle /post command

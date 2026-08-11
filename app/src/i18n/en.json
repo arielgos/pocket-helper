@@ -43,6 +43,8 @@
     "failedCreateSession": "Failed to create session: {{message}}",
     "sessionCreated": "Session '{{name}}' created and activated.",
     "sessionSwitched": "Switched to session '{{name}}'.",
+    "cannotDeleteDefaultSession": "Cannot delete the default session.",
+    "sessionDeleted": "Session deleted and switched to default.",
     "invalidLinkFormat": "Invalid link format. Please provide a valid HTTP or HTTPS URL.",
     "postCommandFormat": "Invalid /post command format. Usage: /post <topic> <link>"
   },
@@ -66,6 +68,10 @@
     "session": {
       "description": "Create/Open a chat session",
       "usage": "/session <name>"
+    },
+    "remove": {
+      "description": "Delete current session and switch to default",
+      "usage": "/remove"
     },
     "post": {
       "description": "Post a topic with a link",
