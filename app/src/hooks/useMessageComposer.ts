@@ -39,7 +39,9 @@ export function useMessageComposer(userId: string) {
       if (command.startsWith("/echo ")) {
         const echoMessage = command.substring(6).trim(); // Remove "/echo " and trim
         if (echoMessage) {
-          await sendChatMessage({ text: echoMessage, userId });
+          // Get current session ID and pass it to sendChatMessage
+          const currentSessionId = await getCurrentSessionId();
+          await sendChatMessage({ text: echoMessage, userId, sessionId: currentSessionId ?? undefined });
           setInputValue("");
           setErrorMessage(null);
           return;

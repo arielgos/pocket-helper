@@ -1,20 +1,26 @@
-import { KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChatComposer } from './src/components/ChatComposer';
-import { ChatHeader } from './src/components/ChatHeader';
-import { ChatMessageList } from './src/components/ChatMessageList';
-import { ChatStatusBanner } from './src/components/ChatStatusBanner';
-import { CommandHelpModal } from './src/components/CommandHelpModal';
-import { SessionsModal } from './src/components/SessionsModal';
-import { t } from './src/i18n';
-import { useChatMessages } from './src/hooks/useChatMessages';
-import { useMessageComposer } from './src/hooks/useMessageComposer';
-import { createCurrentUserId } from './src/services/chatService';
+import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { ChatComposer } from "./src/components/ChatComposer";
+import { ChatHeader } from "./src/components/ChatHeader";
+import { ChatMessageList } from "./src/components/ChatMessageList";
+import { ChatStatusBanner } from "./src/components/ChatStatusBanner";
+import { CommandHelpModal } from "./src/components/CommandHelpModal";
+import { SessionsModal } from "./src/components/SessionsModal";
+import { t } from "./src/i18n";
+import { useChatMessages } from "./src/hooks/useChatMessages";
+import { useMessageComposer } from "./src/hooks/useMessageComposer";
+import { createCurrentUserId } from "./src/services/chatService";
+import { SessionProvider, useSession } from "./src/context/SessionContext";
 
 const currentUserId = createCurrentUserId();
 
-export default function App() {
-  const { messages, loading, errorMessage: loadErrorMessage } = useChatMessages();
+// Create a wrapper component that uses the session context
+const AppWithSessionProvider: React.FC = () => {
+  const {
+    messages,
+    loading,
+    errorMessage: loadErrorMessage,
+  } = useChatMessages();
   const {
     inputValue,
     setInputValue,
@@ -32,7 +38,7 @@ export default function App() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
         style={styles.container}
       >
         <ChatHeader />
@@ -42,9 +48,9 @@ export default function App() {
           errorMessage={loadErrorMessage ?? composerErrorMessage}
           validationMessage={
             validatingMessage
-              ? Platform.OS === 'android'
-                ? t('labels.checkingMessageClarityOnDevice')
-                : t('labels.checkingMessageClarity')
+              ? Platform.OS === "android"
+                ? t("labels.checkingMessageClarityOnDevice")
+                : t("labels.checkingMessageClarity")
               : null
           }
         />
@@ -60,12 +66,12 @@ export default function App() {
           canSend={canSend}
           validatingMessage={validatingMessage}
         />
-        
+
         <CommandHelpModal
           visible={showCommandHelp}
           onClose={() => setShowCommandHelp(false)}
         />
-        
+
         <SessionsModal
           visible={showSessionsList}
           onClose={() => setShowSessionsList(false)}
@@ -74,12 +80,20 @@ export default function App() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
+};
+
+export default function App() {
+  return (
+    <SessionProvider>
+      <AppWithSessionProvider />
+    </SessionProvider>
+  );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
   },
   container: {
     flex: 1,

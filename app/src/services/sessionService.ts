@@ -33,9 +33,12 @@ export async function getAllSessions(): Promise<Session[]> {
 
 export async function createSession(name: string): Promise<Session> {
   try {
+    // Sanitize session name to contain only letters, numbers, or hyphens
+    const sanitizedSessionName = name.replace(/[^a-zA-Z0-9-]/g, '-');
+    
     // Check if session with this name already exists
     const sessions = await getAllSessions();
-    const existingSession = sessions.find(session => session.name === name);
+    const existingSession = sessions.find(session => session.name === sanitizedSessionName);
     
     if (existingSession) {
       // If it exists, return it
@@ -45,7 +48,7 @@ export async function createSession(name: string): Promise<Session> {
     // Create new session
     const newSession: Session = {
       id: Date.now().toString(),
-      name,
+      name: sanitizedSessionName,
       createdAt: Date.now(),
     };
 

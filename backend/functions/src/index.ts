@@ -14,6 +14,7 @@ const AUTHORIZED_USER_ID = "arielgos";
 type MessagePayload = {
   text: string | null;
   userId: string | null;
+  sessionId: string | null;
   createdAt: number | null;
   [key: string]: unknown;
 };
@@ -60,6 +61,7 @@ function normalizeMessagePayload(value: unknown): MessagePayload | null {
   return {
     text: candidate.text ?? null,
     userId: candidate.userId ?? null,
+    sessionId: candidate.sessionId ?? null,
     createdAt: candidate.createdAt ?? null,
     ...candidate,
   } as MessagePayload;
@@ -152,9 +154,10 @@ async function validatePostAgainstWebArticles(
   messageText: string,
 ): Promise<boolean> {
   // Extract URLs from the message text
-  const urlRegex = /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
+  const urlRegex =
+    /https?:\/\/(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)/g;
   const urls = messageText.match(urlRegex) || [];
-  
+
   if (urls.length === 0) {
     // If no URLs found, we can't validate against web content
     logger.info("No URLs found in message for web article validation");
@@ -170,20 +173,21 @@ async function validatePostAgainstWebArticles(
   for (const url of urls) {
     try {
       const analysisResult = await analyzeLinkContentWithGemini(url);
-      
-      // If any link analysis fails or returns negative validation, 
+
+      // If any link analysis fails or returns negative validation,
       // we consider the post invalid
       if (!analysisResult.isValid) {
         logger.info("Link validation failed", {
           url: url,
-          reason: analysisResult.reason || "Content not suitable for validation"
+          reason:
+            analysisResult.reason || "Content not suitable for validation",
         });
         return false;
       }
     } catch (error) {
       logger.error("Error analyzing link content", {
         url: url,
-        error: error
+        error: error,
       });
       // If we can't analyze a link, we'll still allow the message to pass
       // but log the error for monitoring
@@ -198,7 +202,9 @@ async function validatePostAgainstWebArticles(
  * @param {string} url The URL to analyze.
  * @return {Promise<{isValid: boolean, reason?: string}>} Analysis result.
  */
-async function analyzeLinkContentWithGemini(url: string): Promise<{isValid: boolean, reason?: string}> {
+async function analyzeLinkContentWithGemini(
+  url: string,
+): Promise<{ isValid: boolean; reason?: string }> {
   const geminiApiKey = process.env.GEMINI_API_KEY;
 
   if (!geminiApiKey) {
@@ -215,7 +221,7 @@ async function analyzeLinkContentWithGemini(url: string): Promise<{isValid: bool
           {
             text: `Analyze the content of this web page URL: ${url}. 
             Determine if the content is factual, reliable, and appropriate for validation purposes. 
-            Return a JSON object with "isValid": true/false and "reason": string explaining your decision.`
+            Return a JSON object with "isValid": true/false and "reason": string explaining your decision.`,
           },
         ],
       },
@@ -247,21 +253,21 @@ async function analyzeLinkContentWithGemini(url: string): Promise<{isValid: bool
       data.candidates[0].content
     ) {
       const analysisText = data.candidates[0].content.parts[0]?.text || "";
-      
+
       // Try to parse the JSON response from Gemini
       try {
         const analysis = JSON.parse(analysisText);
         return {
           isValid: analysis.isValid === true,
-          reason: analysis.reason || "No reason provided"
+          reason: analysis.reason || "No reason provided",
         };
       } catch (parseError) {
         // If parsing fails, return a default response
         logger.warn("Failed to parse Gemini analysis result as JSON", {
           analysisText: analysisText,
-          error: parseError
+          error: parseError,
         });
-        
+
         // Default to allowing the content if we can't parse it properly
         return { isValid: true, reason: "Could not parse analysis result" };
       }
