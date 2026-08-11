@@ -1,6 +1,6 @@
 // Firebase-based session storage with session -> messages structure
 
-import { ref, set, get, update, push } from 'firebase/database';
+import { ref, set, get, update, push, remove } from 'firebase/database';
 import { db } from '../firebase';
 import { ChatMessage } from '../types/chat';
 
@@ -8,6 +8,8 @@ export type Session = {
   id: string;
   name: string;
   createdAt: number;
+  lastMessageAt?: number;
+  messageCount?: number;
 };
 
 export async function getAllSessions(): Promise<Session[]> {
@@ -17,17 +19,47 @@ export async function getAllSessions(): Promise<Session[]> {
     
     if (snapshot.exists()) {
       const sessionsData = snapshot.val();
-      return Object.keys(sessionsData).map(id => ({
+      const sessions = Object.keys(sessionsData).map(id => ({
         id,
         name: sessionsData[id].name,
-        createdAt: sessionsData[id].createdAt
+        createdAt: sessionsData[id].createdAt,
+        lastMessageAt: sessionsData[id].lastMessageAt,
+        messageCount: sessionsData[id].messageCount || 0
       }));
+      
+      // Sort by last message time (most recent first)
+      return sessions.sort((a, b) => 
+        (b.lastMessageAt || b.createdAt) - (a.lastMessageAt || a.createdAt)
+      );
     }
     
     return [];
   } catch (error) {
     console.error('Failed to get sessions:', error);
     return [];
+  }
+}
+
+export async function getSessionById(sessionId: string): Promise<Session | null> {
+  try {
+    const sessionRef = ref(db, `sessions/${sessionId}`);
+    const snapshot = await get(sessionRef);
+    
+    if (snapshot.exists()) {
+      const data = snapshot.val();
+      return {
+        id: sessionId,
+        name: data.name,
+        createdAt: data.createdAt,
+        lastMessageAt: data.lastMessageAt,
+        messageCount: data.messageCount || 0
+      };
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to get session by ID:', error);
+    return null;
   }
 }
 
@@ -148,8 +180,41 @@ export async function saveMessageToSession(sessionId: string, message: ChatMessa
       userId: message.userId,
       sessionId: sessionId
     });
+    
+    // Update session metadata
+    await updateSessionMetadata(sessionId);
   } catch (error) {
     console.error('Failed to save message to session:', error);
+    throw error;
+  }
+}
+
+export async function updateSessionMetadata(sessionId: string): Promise<void> {
+  try {
+    const messages = await getSessionMessages(sessionId);
+    const sessionRef = ref(db, `sessions/${sessionId}`);
+    
+    await update(sessionRef, {
+      lastMessageAt: Date.now(),
+      messageCount: messages.length
+    });
+  } catch (error) {
+    console.error('Failed to update session metadata:', error);
+  }
+}
+
+export async function clearSessionMessages(sessionId: string): Promise<void> {
+  try {
+    const messagesRef = ref(db, `sessions/${sessionId}/messages`);
+    await remove(messagesRef);
+    
+    // Update session metadata
+    const sessionRef = ref(db, `sessions/${sessionId}`);
+    await update(sessionRef, {
+      messageCount: 0
+    });
+  } catch (error) {
+    console.error('Failed to clear session messages:', error);
     throw error;
   }
 }

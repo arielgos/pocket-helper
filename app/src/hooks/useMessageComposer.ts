@@ -3,15 +3,12 @@ import { t } from "../i18n";
 import { validateMessageUnderstandability } from "../messageValidation";
 import {
   sendChatMessage,
-  clearAllMessages,
   clearMessagesBySession,
 } from "../services/chatService";
 import {
-  getAllSessions,
   createSession,
-  setCurrentSession,
-  getCurrentSessionId,
 } from "../services/sessionService";
+import { useSession } from "../context/SessionContext";
 
 export function useMessageComposer(userId: string) {
   const [inputValue, setInputValue] = useState("");
@@ -19,7 +16,8 @@ export function useMessageComposer(userId: string) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [showCommandHelp, setShowCommandHelp] = useState(false);
   const [showSessionsList, setShowSessionsList] = useState(false);
-  const [sessionsList, setSessionsList] = useState<any[]>([]);
+  const { currentSessionId, sessions, switchSession, refreshSessions } = useSession();
+  const sessionsList = sessions;
 
   const canSend = useMemo(
     () => inputValue.trim().length > 0 && !validatingMessage,
@@ -48,12 +46,10 @@ export function useMessageComposer(userId: string) {
       if (command.startsWith("/echo ")) {
         const echoMessage = command.substring(6).trim(); // Remove "/echo " and trim
         if (echoMessage) {
-          // Get current session ID and pass it to sendChatMessage
-          const currentSessionId = await getCurrentSessionId();
           await sendChatMessage({
             text: echoMessage,
             userId,
-            sessionId: currentSessionId ?? undefined,
+            sessionId: currentSessionId,
           });
           setInputValue("");
           setErrorMessage(null);
@@ -67,15 +63,7 @@ export function useMessageComposer(userId: string) {
       // Handle /clear command
       if (command === "/clear") {
         try {
-          // Get current session ID to clear only messages from that session
-          const currentSessionId = await getCurrentSessionId();
-          if (currentSessionId) {
-            // In a real implementation, this would clear only messages from the current session
-            await clearMessagesBySession(currentSessionId);
-          } else {
-            // If no session is set, clear all messages (backward compatibility)
-            await clearAllMessages();
-          }
+          await clearMessagesBySession(currentSessionId);
           setInputValue("");
           setErrorMessage(null);
         } catch (error) {
@@ -91,9 +79,7 @@ export function useMessageComposer(userId: string) {
       // Handle /sessions command
       if (command === "/sessions") {
         try {
-          const sessions = await getAllSessions();
-          console.log("Sessions retrieved:", sessions); // Debug log
-          setSessionsList(sessions);
+          await refreshSessions();
           setShowSessionsList(true);
         } catch (error) {
           const message =
@@ -112,8 +98,8 @@ export function useMessageComposer(userId: string) {
         if (sessionName) {
           try {
             const newSession = await createSession(sessionName);
-            // Set the newly created session as current
-            await setCurrentSession(newSession.id);
+            // Switch to the newly created session
+            await switchSession(newSession.id);
             // Show feedback about session creation or switching
             setErrorMessage(t("errors.sessionSwitched", { name: sessionName }));
             setInputValue("");
@@ -147,11 +133,10 @@ export function useMessageComposer(userId: string) {
             // Validate that link looks like a URL (basic validation)
             if (link.startsWith("http://") || link.startsWith("https://")) {
               const formattedMessage = `${topic} [${link}]`;
-              const currentSessionId = await getCurrentSessionId();
               await sendChatMessage({
                 text: formattedMessage,
                 userId,
-                sessionId: currentSessionId ?? undefined,
+                sessionId: currentSessionId,
               });
               setInputValue("");
               setErrorMessage(null);
@@ -187,12 +172,10 @@ export function useMessageComposer(userId: string) {
         return;
       }
 
-      // Get current session ID and pass it to sendChatMessage
-      const currentSessionId = await getCurrentSessionId();
       await sendChatMessage({
         text,
         userId,
-        sessionId: currentSessionId ?? undefined,
+        sessionId: currentSessionId,
       });
       setInputValue("");
       setErrorMessage(null);
@@ -205,7 +188,7 @@ export function useMessageComposer(userId: string) {
     } finally {
       setValidatingMessage(false);
     }
-  }, [inputValue, userId]);
+  }, [inputValue, userId, currentSessionId, switchSession, refreshSessions]);
 
   return {
     inputValue,
@@ -219,6 +202,5 @@ export function useMessageComposer(userId: string) {
     showSessionsList,
     setShowSessionsList,
     sessionsList,
-    setSessionsList,
   };
 }

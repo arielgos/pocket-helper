@@ -1,56 +1,58 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ChatMessage } from '../types/chat';
-import { subscribeToChatMessages } from '../services/chatService';
+import { subscribeToSessionMessages } from '../services/chatService';
 import { t } from '../i18n';
-import { getCurrentSessionId } from '../services/sessionService';
+import { useSession } from '../context/SessionContext';
 
 export function useChatMessages() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const { currentSessionId, onSessionChange } = useSession();
+  const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // Get current session ID and set up message subscription
-    const getSessionIdAndSubscribe = async () => {
-      try {
-        const sessionId = await getCurrentSessionId();
-        
-        const unsubscribe = subscribeToChatMessages(
-          (nextMessages) => {
-            // Filter messages by current session
-            const filteredMessages = nextMessages.filter(message => 
-              message.sessionId === sessionId || 
-              (sessionId === "default" && !message.sessionId)
-            );
-            
-            setMessages(filteredMessages);
-            setLoading(false);
-            setErrorMessage(null);
-          },
-          (message) => {
-            setLoading(false);
-            setErrorMessage(t('errors.failedLoadMessages', { message }));
-          }
-        );
+    // Clear previous subscription
+    if (unsubscribeRef.current) {
+      unsubscribeRef.current();
+      unsubscribeRef.current = null;
+    }
 
-        // Return the unsubscribe function for cleanup
-        return unsubscribe;
-      } catch (error) {
-        console.error('Failed to get session or set up subscription:', error);
-        setLoading(false);
-        setErrorMessage(t('errors.failedLoadMessages', { message: 'Failed to initialize session' }));
+    // Reset state when session changes
+    setLoading(true);
+    setMessages([]);
+    setErrorMessage(null);
+
+    // Subscribe to current session messages
+    try {
+      const unsubscribe = subscribeToSessionMessages(
+        currentSessionId,
+        (nextMessages) => {
+          setMessages(nextMessages);
+          setLoading(false);
+          setErrorMessage(null);
+        },
+        (message) => {
+          setLoading(false);
+          setErrorMessage(t('errors.failedLoadMessages', { message }));
+        }
+      );
+
+      unsubscribeRef.current = unsubscribe;
+    } catch (error) {
+      console.error('Failed to set up message subscription:', error);
+      setLoading(false);
+      setErrorMessage(t('errors.failedLoadMessages', { message: 'Failed to initialize subscription' }));
+    }
+
+    // Cleanup function
+    return () => {
+      if (unsubscribeRef.current) {
+        unsubscribeRef.current();
+        unsubscribeRef.current = null;
       }
     };
-
-    const unsubscribe = getSessionIdAndSubscribe();
-
-    // The return value of the useEffect should be a cleanup function
-    return () => {
-      // In this case, we can't properly clean up the Firebase subscription here
-      // because we don't have access to the actual unsubscribe function in the right scope
-      // This is a limitation of how the Firebase subscription works in this context
-    };
-  }, []);
+  }, [currentSessionId, onSessionChange, t]);
 
   return { messages, loading, errorMessage };
 }
