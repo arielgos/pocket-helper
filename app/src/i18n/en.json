@@ -42,7 +42,9 @@
     "sessionNameRequired": "Session name is required.",
     "failedCreateSession": "Failed to create session: {{message}}",
     "sessionCreated": "Session '{{name}}' created and activated.",
-    "sessionSwitched": "Switched to session '{{name}}'."
+    "sessionSwitched": "Switched to session '{{name}}'.",
+    "invalidLinkFormat": "Invalid link format. Please provide a valid HTTP or HTTPS URL.",
+    "postCommandFormat": "Invalid /post command format. Usage: /post <topic> <link>"
   },
   "commands": {
     "help": {
@@ -64,6 +66,10 @@
     "session": {
       "description": "Create a new chat session",
       "usage": "/session <name>"
+    },
+    "post": {
+      "description": "Post a topic with a link",
+      "usage": "/post <topic> <link>"
     }
   },
   "prompts": {

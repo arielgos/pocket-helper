@@ -1,8 +1,17 @@
 import { useCallback, useMemo, useState } from "react";
 import { t } from "../i18n";
 import { validateMessageUnderstandability } from "../messageValidation";
-import { sendChatMessage, clearAllMessages, clearMessagesBySession } from "../services/chatService";
-import { getAllSessions, createSession, setCurrentSession, getCurrentSessionId } from "../services/sessionService";
+import {
+  sendChatMessage,
+  clearAllMessages,
+  clearMessagesBySession,
+} from "../services/chatService";
+import {
+  getAllSessions,
+  createSession,
+  setCurrentSession,
+  getCurrentSessionId,
+} from "../services/sessionService";
 
 export function useMessageComposer(userId: string) {
   const [inputValue, setInputValue] = useState("");
@@ -27,21 +36,25 @@ export function useMessageComposer(userId: string) {
     // Check if this is a command
     if (text.startsWith("/")) {
       const command = text.trim().toLowerCase();
-      
+
       // Handle /help command
       if (command === "/help") {
         setShowCommandHelp(true);
         setInputValue("");
         return;
       }
-      
+
       // Handle /echo command
       if (command.startsWith("/echo ")) {
         const echoMessage = command.substring(6).trim(); // Remove "/echo " and trim
         if (echoMessage) {
           // Get current session ID and pass it to sendChatMessage
           const currentSessionId = await getCurrentSessionId();
-          await sendChatMessage({ text: echoMessage, userId, sessionId: currentSessionId ?? undefined });
+          await sendChatMessage({
+            text: echoMessage,
+            userId,
+            sessionId: currentSessionId ?? undefined,
+          });
           setInputValue("");
           setErrorMessage(null);
           return;
@@ -50,7 +63,7 @@ export function useMessageComposer(userId: string) {
           return;
         }
       }
-      
+
       // Handle /clear command
       if (command === "/clear") {
         try {
@@ -74,7 +87,7 @@ export function useMessageComposer(userId: string) {
         }
         return;
       }
-      
+
       // Handle /sessions command
       if (command === "/sessions") {
         try {
@@ -92,7 +105,7 @@ export function useMessageComposer(userId: string) {
         setInputValue("");
         return;
       }
-      
+
       // Handle /session command
       if (command.startsWith("/session ")) {
         const sessionName = command.substring(9).trim(); // Remove "/session " and trim
@@ -119,7 +132,44 @@ export function useMessageComposer(userId: string) {
           return;
         }
       }
-      
+
+      // Handle /post command
+      if (command.startsWith("/post ")) {
+        const postCommand = command.substring(6).trim(); // Remove "/post " and trim
+        if (postCommand) {
+          // Parse topic and link from the command
+          const parts = postCommand.split(" ");
+          if (parts.length >= 2) {
+            const topic = parts[0];
+            const link = parts.slice(1).join(" ");
+            console.log("Parsed topic:", topic, "Parsed link:", link); // Debug log
+
+            // Validate that link looks like a URL (basic validation)
+            if (link.startsWith("http://") || link.startsWith("https://")) {
+              const formattedMessage = `${topic} [${link}]`;
+              const currentSessionId = await getCurrentSessionId();
+              await sendChatMessage({
+                text: formattedMessage,
+                userId,
+                sessionId: currentSessionId ?? undefined,
+              });
+              setInputValue("");
+              setErrorMessage(null);
+              return;
+            } else {
+              setErrorMessage(t("errors.invalidLinkFormat"));
+              return;
+            }
+          } else {
+            setErrorMessage(t("errors.postCommandFormat"));
+            return;
+          }
+        } else {
+          setErrorMessage(t("errors.postCommandFormat"));
+          return;
+        }
+      }
+
       // Handle unknown command
       setErrorMessage(t("errors.commandNotFound", { command: text }));
       return;
@@ -139,7 +189,11 @@ export function useMessageComposer(userId: string) {
 
       // Get current session ID and pass it to sendChatMessage
       const currentSessionId = await getCurrentSessionId();
-      await sendChatMessage({ text, userId, sessionId: currentSessionId ?? undefined });
+      await sendChatMessage({
+        text,
+        userId,
+        sessionId: currentSessionId ?? undefined,
+      });
       setInputValue("");
       setErrorMessage(null);
     } catch (error) {

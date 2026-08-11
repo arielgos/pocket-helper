@@ -51,6 +51,12 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
                 {t("commands.session.usage")} - {t("commands.session.description")}
               </Text>
             </View>
+            
+            <View style={styles.commandItem}>
+              <Text style={styles.commandText}>
+                {t("commands.post.usage")} - {t("commands.post.description")}
+              </Text>
+            </View>
           </View>
 
           <Pressable style={styles.closeButton} onPress={onClose}>
