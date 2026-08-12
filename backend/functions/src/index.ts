@@ -221,14 +221,13 @@ function isValidMessage(messageData: Message | null): boolean {
 /**
  * Generates AI response using Gemini model.
  * @param {string} messageText The message text to process.
- * @param {string} apiKey The Gemini API key.
+ * @param {GoogleGenAI} ai The Gemini AI instance.
  * @return {Promise<string>} The generated response text.
  */
 async function generateAiResponse(
   messageText: string,
-  apiKey: string,
+  ai: GoogleGenAI,
 ): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey });
   const result = await ai.models.generateContent({
     model: GEMINI_MODEL_NAME,
     contents: messageText,
@@ -239,14 +238,13 @@ async function generateAiResponse(
 /**
  * Generates AI research response using Gemini model with research prompt.
  * @param {string} messageText The message text in format: topic [url].
- * @param {string} apiKey The Gemini API key.
+ * @param {GoogleGenAI} ai The Gemini AI instance.
  * @return {Promise<string>} The generated research response text.
  */
 async function generateAiResearchResponse(
   messageText: string,
-  apiKey: string,
+  ai: GoogleGenAI,
 ): Promise<string> {
-  const ai = new GoogleGenAI({ apiKey });
   const prompt = RESEARCH_PROMPT_TEMPLATE.replace("{text}", messageText);
   logger.debug(`Generated research prompt: ${prompt}`);
   const result = await ai.models.generateContent({
@@ -356,12 +354,12 @@ function buildSummaryPrompt(conversationText: string): string {
 /**
  * Fetches all messages from a session and generates a summary with social media post.
  * @param {string} sessionId The session ID to fetch messages from.
- * @param {string} apiKey The Gemini API key.
+ * @param {GoogleGenAI} ai The Gemini AI instance.
  * @return {Promise<string>} The generated summary and social media post.
  */
 async function generateSessionSummary(
   sessionId: string,
-  apiKey: string,
+  ai: GoogleGenAI,
 ): Promise<string> {
   const messagesSnapshot = await fetchSessionMessages(sessionId);
 
@@ -381,7 +379,7 @@ async function generateSessionSummary(
   const conversationText = formatConversationText(sortedMessages);
   const summaryPrompt = buildSummaryPrompt(conversationText);
 
-  return await generateAiResponse(summaryPrompt, apiKey);
+  return await generateAiResponse(summaryPrompt, ai);
 }
 
 /**
@@ -409,16 +407,14 @@ function createImagePromptFromSummary(summaryText: string): string {
 /**
  * Generates an image from text using Gemini's native image generation model.
  * @param {string} prompt The text prompt for image generation.
- * @param {string} apiKey The Gemini API key.
+ * @param {GoogleGenAI} ai The Gemini AI instance.
  * @return {Promise<Buffer>} The generated image as a buffer.
  * @throws {Error} If no image data is returned by the model.
  */
 async function generateImageFromText(
   prompt: string,
-  apiKey: string,
+  ai: GoogleGenAI,
 ): Promise<Buffer> {
-  const ai = new GoogleGenAI({ apiKey });
-
   const generationConfig = {
     temperature: 1,
     max_output_tokens: 65536,
@@ -509,18 +505,18 @@ async function uploadImageToStorage(
  * Generates an image from summary text and uploads it to storage.
  * @param {string} summaryText The summary text to create image from.
  * @param {string} sessionId The session ID.
- * @param {string} apiKey The Gemini API key.
+ * @param {GoogleGenAI} ai The Gemini AI instance.
  * @return {Promise<string>} The public URL of the generated image.
  */
 async function generateAndUploadSummaryImage(
   summaryText: string,
   sessionId: string,
-  apiKey: string,
+  ai: GoogleGenAI,
 ): Promise<string> {
   const imagePrompt = createImagePromptFromSummary(summaryText);
   logger.info("Generating image from summary", { sessionId });
 
-  const imageBuffer = await generateImageFromText(imagePrompt, apiKey);
+  const imageBuffer = await generateImageFromText(imagePrompt, ai);
   logger.info("Image generated, uploading to storage", { sessionId });
 
   const imageUrl = await uploadImageToStorage(imageBuffer, sessionId);
@@ -558,6 +554,8 @@ export const onNewMessageCreated = onValueCreated(
       return;
     }
 
+    const ai = new GoogleGenAI({ apiKey });
+
     if (validMessage.type === MessageType.Echo) {
       logger.info(`Received ECHO message '${messageId}' Ignoring.`);
       return;
@@ -566,10 +564,7 @@ export const onNewMessageCreated = onValueCreated(
     if (validMessage.type === MessageType.Message) {
       logger.info(`Processing MESSAGE for message '${messageId}'`);
       try {
-        const responseText = await generateAiResponse(
-          validMessage.text,
-          apiKey,
-        );
+        const responseText = await generateAiResponse(validMessage.text, ai);
         await writeResponseToDatabase(validMessage, responseText);
       } catch (error) {
         logger.error("Failed to process message and generate AI response", {
@@ -585,7 +580,7 @@ export const onNewMessageCreated = onValueCreated(
       try {
         const responseText = await generateAiResearchResponse(
           validMessage.text,
-          apiKey,
+          ai,
         );
         await writeResponseToDatabase(validMessage, responseText);
       } catch (error) {
@@ -602,20 +597,17 @@ export const onNewMessageCreated = onValueCreated(
       try {
         await writeResponseToDatabase(validMessage, PROCESSING_STATUS_MESSAGE);
 
-        const summaryText = await generateSessionSummary(sessionId, apiKey);
+        const summaryText = await generateSessionSummary(sessionId, ai);
 
         await writeResponseToDatabase(validMessage, summaryText);
 
-        // Attempt to generate and upload social media image
-        // This is wrapped in try-catch to prevent image generation
-        // failures from breaking the summary process
         try {
           await writeResponseToDatabase(validMessage, GENERATING_IMAGE_MESSAGE);
 
           const imageUrl = await generateAndUploadSummaryImage(
             summaryText,
             sessionId,
-            apiKey,
+            ai,
           );
 
           const imageMessage = `Social media image generated: ${imageUrl}`;
