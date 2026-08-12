@@ -74,7 +74,7 @@ const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
 // Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
 const IMAGE_FILE_EXTENSION = ".jpg";
-const IMAGE_CONTENT_TYPE = "image/jpg";
+const IMAGE_CONTENT_TYPE = "image/jpeg";
 const STORAGE_BASE_URL = "https://storage.googleapis.com";
 
 // Image generation configuration
@@ -252,6 +252,9 @@ async function generateAiResearchResponse(
   const result = await ai.models.generateContent({
     model: GEMINI_MODEL_NAME,
     contents: prompt,
+    config: {
+      tools: [{ googleSearch: {} }],
+    },
   });
   return result.text || "";
 }
@@ -438,12 +441,16 @@ async function generateImageFromText(
 
   console.debug("Image generation steps received from Gemini", { steps });
 
-  if (steps.length === 1) {
-    const imageBuffer = Buffer.from(steps[0].content[0].data!, "base64");
-    return imageBuffer;
+  const imagePart = steps
+    .flatMap((s) => s.content || [])
+    .find((part: any) => part.data || part.inlineData?.data);
+
+  if (!imagePart) {
+    throw new Error("No image data found in response steps.");
   }
 
-  throw new Error("No image data returned by the model.");
+  const base64Data = imagePart.data || imagePart.inlineData.data;
+  return Buffer.from(base64Data, "base64");
 }
 
 /**
@@ -543,6 +550,7 @@ export const onNewMessageCreated = onValueCreated(
 
     const validMessage = messageData as Message;
     const messageId = event.params.messageId;
+    const sessionId = event.params.sessionId;
 
     const apiKey = geminiApiKey.value();
     if (!apiKey) {
@@ -566,7 +574,7 @@ export const onNewMessageCreated = onValueCreated(
       } catch (error) {
         logger.error("Failed to process message and generate AI response", {
           error,
-          sessionId: validMessage.sessionId,
+          sessionId: sessionId,
         });
       }
       return;
@@ -583,7 +591,7 @@ export const onNewMessageCreated = onValueCreated(
       } catch (error) {
         logger.error("Failed to process POST and generate AI response", {
           error,
-          sessionId: validMessage.sessionId,
+          sessionId: sessionId,
         });
       }
       return;
@@ -594,10 +602,7 @@ export const onNewMessageCreated = onValueCreated(
       try {
         await writeResponseToDatabase(validMessage, PROCESSING_STATUS_MESSAGE);
 
-        const summaryText = await generateSessionSummary(
-          validMessage.sessionId || "",
-          apiKey,
-        );
+        const summaryText = await generateSessionSummary(sessionId, apiKey);
 
         await writeResponseToDatabase(validMessage, summaryText);
 
@@ -609,20 +614,22 @@ export const onNewMessageCreated = onValueCreated(
 
           const imageUrl = await generateAndUploadSummaryImage(
             summaryText,
-            validMessage.sessionId || "",
+            sessionId,
             apiKey,
           );
 
           const imageMessage = `Social media image generated: ${imageUrl}`;
           await writeResponseToDatabase(validMessage, imageMessage);
         } catch (imageError) {
-          logger.warn("Image generation failed, continuing without image", {
-            error: imageError,
-            sessionId: validMessage.sessionId,
-          });
-          const fallbackMessage =
-            "⚠️ Image generation is currently unavailable. " +
-            "Summary has been generated successfully.";
+          logger.error(
+            "Image generation failed, continuing without image",
+            {
+              error: imageError,
+              sessionId: sessionId,
+            },
+            imageError,
+          );
+          const fallbackMessage = "Image generation is currently unavailable.";
           await writeResponseToDatabase(validMessage, fallbackMessage);
         }
       } catch (error) {
@@ -630,7 +637,7 @@ export const onNewMessageCreated = onValueCreated(
           "Failed to generate session summary and social media post",
           {
             error,
-            sessionId: validMessage.sessionId,
+            sessionId: sessionId,
           },
         );
       }
