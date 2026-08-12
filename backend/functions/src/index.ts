@@ -317,6 +317,7 @@ export const onNewMessageCreated = onValueCreated(
           sessionId: validMessage.sessionId,
         });
       }
+      return;
     }
 
     logger.warn(
