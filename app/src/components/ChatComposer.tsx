@@ -22,6 +22,7 @@ export function ChatComposer({
         value={inputValue}
         onChangeText={onChangeText}
         placeholder={t("labels.messagePlaceholder")}
+        placeholderTextColor="#006600"
         style={styles.input}
         autoCorrect
         editable={!validatingMessage}

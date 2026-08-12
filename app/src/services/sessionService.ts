@@ -130,7 +130,16 @@ export async function getCurrentSessionId(): Promise<string> {
 
 export async function deleteSession(sessionId: string): Promise<void> {
   try {
-    // Remove session from sessions list
+    // Prevent deletion of default session
+    if (sessionId === "default") {
+      throw new Error("Cannot delete the default session");
+    }
+    
+    // Remove all messages associated with this session
+    const messagesRef = ref(db, `sessions/${sessionId}/messages`);
+    await remove(messagesRef);
+    
+    // Remove session metadata from sessions list
     const sessionsRef = ref(db, 'sessions');
     const updateData: any = {};
     updateData[`/${sessionId}`] = null;

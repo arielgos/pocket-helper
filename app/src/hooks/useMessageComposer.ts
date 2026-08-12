@@ -130,15 +130,13 @@ export function useMessageComposer(userId: string) {
             return;
           }
 
-          // Delete the current session
+          // Delete the current session (this also handles switching to default)
           await deleteSession(currentSessionId);
           
-          // Switch back to default session
+          // Refresh sessions list and switch to default session
           await switchSession("default");
           
           setErrorMessage(t("errors.sessionDeleted"));
-          setInputValue("");
-          return;
         } catch (error) {
           const message =
             error instanceof Error
