@@ -13,6 +13,7 @@ import {
   COMMAND_SESSION,
   COMMAND_REMOVE,
   COMMAND_POST,
+  COMMAND_PROCESS,
 } from "../constants/chat";
 import {
   handleHelpCommand,
@@ -22,6 +23,7 @@ import {
   handleSessionCommand,
   handleRemoveCommand,
   handlePostCommand,
+  handleProcessCommand,
 } from "./commandHandlers";
 
 export function useMessageComposer(userId: string) {
@@ -91,6 +93,11 @@ export function useMessageComposer(userId: string) {
 
       if (command.startsWith(COMMAND_POST)) {
         await handlePostCommand(command, commandParams);
+        return;
+      }
+
+      if (command === COMMAND_PROCESS) {
+        await handleProcessCommand(commandParams);
         return;
       }
 

@@ -166,3 +166,17 @@ export async function handlePostCommand(
   params.setInputValue("");
   params.setErrorMessage(null);
 }
+
+export async function handleProcessCommand(
+  params: CommandHandlerParams,
+): Promise<void> {
+  await sendChatMessage({
+    text: "",
+    userId: params.userId,
+    sessionId: params.currentSessionId,
+    type: MessageType.Process,
+  });
+  
+  params.setInputValue("");
+  params.setErrorMessage(null);
+}

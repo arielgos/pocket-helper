@@ -50,32 +50,36 @@
   },
   "commands": {
     "help": {
-      "description": "Show available commands",
+      "description": "Display this help menu with all available commands",
       "usage": "/help"
     },
     "echo": {
-      "description": "Echo a message back to chat [ECHO]",
+      "description": "Send a message marked as [ECHO] type without validation",
       "usage": "/echo <message>"
     },
     "clear": {
-      "description": "Clear all messages from current session",
+      "description": "Delete all messages from the current session",
       "usage": "/clear"
     },
     "sessions": {
-      "description": "List all chat sessions",
+      "description": "View all available chat sessions",
       "usage": "/sessions"
     },
     "session": {
-      "description": "Create or switch to a chat session",
+      "description": "Create a new session or switch to an existing one",
       "usage": "/session <name>"
     },
     "remove": {
-      "description": "Delete current session (cannot delete default)",
+      "description": "Delete the current session and return to default",
       "usage": "/remove"
     },
     "post": {
-      "description": "Post a topic with a link [POST]",
+      "description": "Share a topic with a link, displayed as [POST] type",
       "usage": "/post <topic> <link>"
+    },
+    "process": {
+      "description": "Create a process marker with timestamp only",
+      "usage": "/process"
     }
   },
   "prompts": {

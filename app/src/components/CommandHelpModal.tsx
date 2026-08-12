@@ -23,11 +23,22 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
 
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
             <View style={styles.commandList}>
+              {/* General Commands */}
+              <Text style={styles.sectionTitle}>General</Text>
+              
               <View style={styles.commandItem}>
                 <Text style={styles.commandUsage}>{t("commands.help.usage")}</Text>
                 <Text style={styles.commandDescription}>{t("commands.help.description")}</Text>
               </View>
               
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.clear.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.clear.description")}</Text>
+              </View>
+
+              {/* Message Commands */}
+              <Text style={styles.sectionTitle}>Message Types</Text>
+
               <View style={styles.commandItem}>
                 <Text style={styles.commandUsage}>{t("commands.echo.usage")}</Text>
                 <Text style={styles.commandDescription}>{t("commands.echo.description")}</Text>
@@ -39,9 +50,12 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
               </View>
               
               <View style={styles.commandItem}>
-                <Text style={styles.commandUsage}>{t("commands.session.usage")}</Text>
-                <Text style={styles.commandDescription}>{t("commands.session.description")}</Text>
+                <Text style={styles.commandUsage}>{t("commands.process.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.process.description")}</Text>
               </View>
+              
+              {/* Session Management */}
+              <Text style={styles.sectionTitle}>Session Management</Text>
               
               <View style={styles.commandItem}>
                 <Text style={styles.commandUsage}>{t("commands.sessions.usage")}</Text>
@@ -49,13 +63,13 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
               </View>
               
               <View style={styles.commandItem}>
-                <Text style={styles.commandUsage}>{t("commands.remove.usage")}</Text>
-                <Text style={styles.commandDescription}>{t("commands.remove.description")}</Text>
+                <Text style={styles.commandUsage}>{t("commands.session.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.session.description")}</Text>
               </View>
               
               <View style={styles.commandItem}>
-                <Text style={styles.commandUsage}>{t("commands.clear.usage")}</Text>
-                <Text style={styles.commandDescription}>{t("commands.clear.description")}</Text>
+                <Text style={styles.commandUsage}>{t("commands.remove.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.remove.description")}</Text>
               </View>
             </View>
           </ScrollView>
@@ -116,6 +130,18 @@ const styles = StyleSheet.create({
   commandList: {
     width: "100%",
     marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#00ff00",
+    marginTop: 12,
+    marginBottom: 8,
+    paddingBottom: 4,
+    borderBottomWidth: 1,
+    borderBottomColor: "#003300",
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
   commandItem: {
     marginBottom: 12,

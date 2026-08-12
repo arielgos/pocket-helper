@@ -123,6 +123,7 @@ enum MessageType {
   Message = "message",
   Post = "post",
   Echo = "echo",
+  Process = "process",
 }
 
 /**
@@ -206,6 +207,8 @@ async function generateAiResearchResponse(
     url,
   );
 
+  logger.debug(`Generated research prompt: ${prompt}`);
+
   const result = await model.generateContent(prompt);
   return result.response.text();
 }
@@ -216,7 +219,7 @@ async function generateAiResearchResponse(
  * @param {string} responseText The AI response text.
  * @return {Promise<void>}
  */
-async function writeAiResponseToDatabase(
+async function writeResponseToDatabase(
   originalMessage: Message,
   responseText: string,
 ): Promise<void> {
@@ -224,6 +227,7 @@ async function writeAiResponseToDatabase(
     ...originalMessage,
     userId: UserType.System,
     createdAt: Date.now(),
+    type: MessageType.Message,
     text: responseText,
   };
 
@@ -277,7 +281,7 @@ export const onNewMessageCreated = onValueCreated(
           validMessage.text,
           apiKey,
         );
-        await writeAiResponseToDatabase(validMessage, responseText);
+        await writeResponseToDatabase(validMessage, responseText);
       } catch (error) {
         logger.error("Failed to process message and generate AI response", {
           error,
@@ -294,7 +298,7 @@ export const onNewMessageCreated = onValueCreated(
           validMessage.text,
           apiKey,
         );
-        await writeAiResponseToDatabase(validMessage, responseText);
+        await writeResponseToDatabase(validMessage, responseText);
       } catch (error) {
         logger.error("Failed to process post and generate AI response", {
           error,
@@ -302,6 +306,21 @@ export const onNewMessageCreated = onValueCreated(
         });
       }
       return;
+    }
+
+    if (validMessage.type === MessageType.Process) {
+      logger.info(`Processing PROCESS for messsage '${messageId}'`);
+      try {
+        await writeResponseToDatabase(
+          validMessage,
+          "Processing in progress...",
+        );
+      } catch (error) {
+        logger.error("Failed to process process and generate AI response", {
+          error,
+          sessionId: validMessage.sessionId,
+        });
+      }
     }
 
     logger.warn(
