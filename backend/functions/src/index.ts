@@ -17,7 +17,7 @@ import { getStorage } from "firebase-admin/storage";
 // Configuration constants
 const FUNCTION_MAX_INSTANCES = 10;
 const GEMINI_MODEL_NAME = "gemini-3.6-flash";
-const IMAGE_MODEL_NAME = "gemini-2.5-flash-image";
+const IMAGE_MODEL_NAME = "gemini-3.1-flash-lite-image";
 const MESSAGES_COLLECTION_PATH = "/sessions/{sessionId}/messages/{messageId}";
 
 // Response constants
