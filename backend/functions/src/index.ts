@@ -24,7 +24,8 @@ setGlobalOptions({ maxInstances: FUNCTION_MAX_INSTANCES });
 
 /**
  * Logs the health check request metadata.
- * @param request The request metadata to log.
+ * @param {RequestMetadata} request The request metadata to log.
+
  */
 function logHealthCheck(request: RequestMetadata): void {
   logger.info("Health check received", {
@@ -35,8 +36,8 @@ function logHealthCheck(request: RequestMetadata): void {
 
 /**
  * Creates request metadata from the HTTP request.
- * @param request The HTTP request object.
- * @returns The extracted request metadata.
+ * @param {Request} request The HTTP request object.
+ * @return {RequestMetadata} The extracted request metadata.
  */
 function createRequestMetadata(request: Request): RequestMetadata {
   return {
@@ -48,6 +49,9 @@ function createRequestMetadata(request: Request): RequestMetadata {
 /**
  * Exposes a simple health endpoint for monitoring.
  * Returns HTTP 200 with "OK" message when the service is healthy.
+ * @param request The HTTP request object.
+ * @param response The HTTP response object.
+ * @returns void
  */
 export const health = onRequest(
   (request: Request, response: Response): void => {
