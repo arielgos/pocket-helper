@@ -27,15 +27,13 @@ const RESEARCH_PROMPT_TEMPLATE = `Role: Act as an expert research analyst and su
 Task: Conduct a detailed research and analysis task on the topic provided below, incorporating
 insights from the specified external link as well as up-to-date web research.
 
-Inputs:
-Topic: {topics}
-External Link: {url}
+Inputs in the next format TOPIC [URL]: {text}
 
 Instructions:
 1. Analyze the Link: Access and review the provided link. Extract its core arguments, key
 findings, data points, and any unique perspectives.
 2. Conduct Supplemental Research: Search for additional relevant, reliable, and recent context
-on the topic to expand upon, verify, or provide counter-perspectives to the link's content.
+on the topic/s to expand upon, verify, or provide counter-perspectives to the link's content.
 3. Synthesize Findings: Combine the insights into a cohesive research brief.
 
 Output Format:
@@ -184,31 +182,10 @@ async function generateAiResearchResponse(
   messageText: string,
   apiKey: string,
 ): Promise<string> {
-  // Parse message to extract URL from square brackets and topic
-  // Expected format: ${topic} [${url}]
-  const bracketUrlRegex = /\[(https?:\/\/[^\]]+)\]/i;
-  const match = messageText.match(bracketUrlRegex);
-
-  if (!match) {
-    throw new Error(
-      "No URL found in message text. Expected format: topic [url]",
-    );
-  }
-
-  const url = match[1];
-  const topics =
-    messageText.replace(bracketUrlRegex, "").trim() || "General research";
-
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
-
-  const prompt = RESEARCH_PROMPT_TEMPLATE.replace("{topics}", topics).replace(
-    "{url}",
-    url,
-  );
-
+  const prompt = RESEARCH_PROMPT_TEMPLATE.replace("{text}", messageText);
   logger.debug(`Generated research prompt: ${prompt}`);
-
   const result = await model.generateContent(prompt);
   return result.response.text();
 }
