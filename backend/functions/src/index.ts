@@ -73,8 +73,8 @@ const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
 
 // Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
-const IMAGE_FILE_EXTENSION = ".png";
-const IMAGE_CONTENT_TYPE = "image/png";
+const IMAGE_FILE_EXTENSION = ".jpg";
+const IMAGE_CONTENT_TYPE = "image/jpg";
 const STORAGE_BASE_URL = "https://storage.googleapis.com";
 
 // Image generation configuration
@@ -430,20 +430,19 @@ async function generateImageFromText(
     response_modalities: ["image"],
   });
 
-  if (interaction.steps) {
-    for (const step of interaction.steps) {
-      if (step.type === "model_output" && step.content) {
-        for (const part of step.content) {
-          if (part.type === "image") {
-            const imageBuffer = Buffer.from(part.data!, "base64");
-            if (imageBuffer.length > 0) {
-              return imageBuffer;
-            }
-          }
-        }
-      }
-    }
+  logger.info("Prompt sent to Gemini for image generation", { prompt });
+
+  const steps = interaction.steps
+    .filter((step) => step.type === "model_output" && step.content)
+    .map((step) => step as any);
+
+  console.debug("Image generation steps received from Gemini", { steps });
+
+  if (steps.length === 1) {
+    const imageBuffer = Buffer.from(steps[0].content[0].data!, "base64");
+    return imageBuffer;
   }
+
   throw new Error("No image data returned by the model.");
 }
 
