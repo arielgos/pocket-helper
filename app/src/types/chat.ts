@@ -1,9 +1,12 @@
+export type MessageType = 'message' | 'post' | 'echo';
+
 export type ChatMessage = {
   id: string;
   text: string;
   createdAt: number;
   userId: string;
   sessionId?: string;
+  type: MessageType;
 };
 
 export type RawChatMessage = {
@@ -11,4 +14,5 @@ export type RawChatMessage = {
   createdAt?: unknown;
   userId?: unknown;
   sessionId?: unknown;
+  type?: unknown;
 };

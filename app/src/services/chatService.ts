@@ -19,12 +19,19 @@ function normalizeMessage(
     return null;
   }
 
+  // Default to 'message' type if not specified (for backward compatibility)
+  const messageType = typeof value.type === 'string' && 
+    (value.type === 'message' || value.type === 'post' || value.type === 'echo') 
+    ? value.type 
+    : 'message';
+
   return {
     id,
     text: value.text,
     createdAt: value.createdAt,
     userId: value.userId,
     sessionId: value.sessionId as string | undefined,
+    type: messageType,
   };
 }
 
@@ -82,6 +89,7 @@ export async function sendChatMessage(params: {
   text: string;
   userId: string;
   sessionId: string;
+  type?: 'message' | 'post' | 'echo';
 }): Promise<void> {
   // Only save to session-specific storage
   const newMessage: ChatMessage = {
@@ -89,7 +97,8 @@ export async function sendChatMessage(params: {
     text: params.text,
     createdAt: Date.now(),
     userId: params.userId,
-    sessionId: params.sessionId
+    sessionId: params.sessionId,
+    type: params.type || 'message'
   };
   
   await saveMessageToSession(params.sessionId, newMessage);

@@ -51,6 +51,7 @@ export function useMessageComposer(userId: string) {
             text: echoMessage,
             userId,
             sessionId: currentSessionId,
+            type: 'echo',
           });
           setInputValue("");
           setErrorMessage(null);
@@ -121,7 +122,7 @@ export function useMessageComposer(userId: string) {
       }
 
       // Handle /remove command
-      if (command === "/remove") {
+      if (command === "/remove" || command.startsWith("/remove ")) {
         try {
           // Prevent deletion of default session
           if (currentSessionId === "default") {
@@ -166,6 +167,7 @@ export function useMessageComposer(userId: string) {
                 text: formattedMessage,
                 userId,
                 sessionId: currentSessionId,
+                type: 'post',
               });
               setInputValue("");
               setErrorMessage(null);
@@ -205,6 +207,7 @@ export function useMessageComposer(userId: string) {
         text,
         userId,
         sessionId: currentSessionId,
+        type: 'message',
       });
       setInputValue("");
       setErrorMessage(null);

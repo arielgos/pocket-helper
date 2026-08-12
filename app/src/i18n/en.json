@@ -7,7 +7,7 @@
     "loadingMessages": "Loading messages...",
     "checkingMessageClarity": "Checking message clarity with Gemini...",
     "checkingMessageClarityOnDevice": "Checking message clarity on device...",
-    "emptyState": "No messages yet. Say hi 👋",
+    "emptyState": "No messages yet. type /help",
     "messagePlaceholder": "Type a message...",
     "send": "Send",
     "checking": "Checking...",
@@ -54,11 +54,11 @@
       "usage": "/help"
     },
     "echo": {
-      "description": "Echo a message back to chat",
-      "usage": "/echo [message]"
+      "description": "Echo a message back to chat [ECHO]",
+      "usage": "/echo <message>"
     },
     "clear": {
-      "description": "Clear all messages from chat",
+      "description": "Clear all messages from current session",
       "usage": "/clear"
     },
     "sessions": {
@@ -66,15 +66,15 @@
       "usage": "/sessions"
     },
     "session": {
-      "description": "Create/Open a chat session",
+      "description": "Create or switch to a chat session",
       "usage": "/session <name>"
     },
     "remove": {
-      "description": "Delete current session and switch to default",
+      "description": "Delete current session (cannot delete default)",
       "usage": "/remove"
     },
     "post": {
-      "description": "Post a topic with a link",
+      "description": "Post a topic with a link [POST]",
       "usage": "/post <topic> <link>"
     }
   },

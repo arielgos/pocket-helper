@@ -30,9 +30,17 @@ export function ChatMessageList({
             <Text style={[styles.messageText, isMine && styles.myMessageText]}>
               {item.text}
             </Text>
-            <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
-              {new Date(item.createdAt).toLocaleTimeString()}
-            </Text>
+            <View style={styles.metaContainer}>
+              <Text style={styles.messageType}>[{item.type.toUpperCase()}]</Text>
+              <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
+                {new Date(item.createdAt).toLocaleTimeString('en-US', { 
+                  hour12: false,
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  second: '2-digit'
+                })}
+              </Text>
+            </View>
           </View>
         );
       }}
@@ -74,11 +82,20 @@ const styles = StyleSheet.create({
   myMessageText: {
     color: '#00ff00',
   },
-  messageMeta: {
+  metaContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
     marginTop: 4,
+    gap: 6,
+  },
+  messageType: {
+    fontSize: 11,
+    color: '#004400',
+  },
+  messageMeta: {
     fontSize: 11,
     color: '#00ff00',
-    textAlign: 'right',
   },
   myMessageMeta: {
     color: '#00ff00',

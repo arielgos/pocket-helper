@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Modal, Pressable } from "react-native";
+import { StyleSheet, Text, View, Modal, Pressable, ScrollView } from "react-native";
 import { t } from "../i18n";
 
 type CommandHelpModalProps = {
@@ -21,49 +21,44 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
             {t("labels.commandHelpDescription")}
           </Text>
 
-          <View style={styles.commandList}>
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.help.usage")} - {t("commands.help.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.clear.usage")} - {t("commands.clear.description")}
-              </Text>
-            </View>
+          <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+            <View style={styles.commandList}>
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.help.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.help.description")}</Text>
+              </View>
+              
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.echo.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.echo.description")}</Text>
+              </View>
 
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.echo.usage")} - {t("commands.echo.description")}
-              </Text>
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.post.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.post.description")}</Text>
+              </View>
+              
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.session.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.session.description")}</Text>
+              </View>
+              
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.sessions.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.sessions.description")}</Text>
+              </View>
+              
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.remove.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.remove.description")}</Text>
+              </View>
+              
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.clear.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.clear.description")}</Text>
+              </View>
             </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.session.usage")} - {t("commands.session.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.sessions.usage")} - {t("commands.sessions.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.remove.usage")} - {t("commands.remove.description")}
-              </Text>
-            </View>
-            
-            <View style={styles.commandItem}>
-              <Text style={styles.commandText}>
-                {t("commands.post.usage")} - {t("commands.post.description")}
-              </Text>
-            </View>
-          </View>
+          </ScrollView>
 
           <Pressable style={styles.closeButton} onPress={onClose}>
             <Text style={styles.closeButtonText}>
@@ -114,20 +109,32 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#00ff00",
   },
+  scrollView: {
+    width: "100%",
+    maxHeight: 400,
+  },
   commandList: {
     width: "100%",
     marginBottom: 20,
   },
   commandItem: {
-    marginBottom: 10,
-    padding: 8,
+    marginBottom: 12,
+    padding: 10,
     backgroundColor: "#001a00",
     borderRadius: 4,
+    borderLeftWidth: 3,
+    borderLeftColor: "#00ff00",
   },
-  commandText: {
+  commandUsage: {
     fontSize: 16,
-    textAlign: "left",
+    fontWeight: "bold",
     color: "#00ff00",
+    fontFamily: "monospace",
+    marginBottom: 4,
+  },
+  commandDescription: {
+    fontSize: 13,
+    color: "#00cc00",
     fontFamily: "monospace",
   },
   closeButton: {

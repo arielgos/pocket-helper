@@ -169,7 +169,8 @@ export async function getSessionMessages(sessionId: string): Promise<ChatMessage
         text: messagesData[id].text,
         createdAt: messagesData[id].createdAt,
         userId: messagesData[id].userId,
-        sessionId: sessionId
+        sessionId: sessionId,
+        type: messagesData[id].type || 'message'
       }));
     }
     
@@ -187,7 +188,8 @@ export async function saveMessageToSession(sessionId: string, message: ChatMessa
       text: message.text,
       createdAt: message.createdAt,
       userId: message.userId,
-      sessionId: sessionId
+      sessionId: sessionId,
+      type: message.type
     });
     
     // Update session metadata
