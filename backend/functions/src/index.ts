@@ -227,7 +227,6 @@ async function writeResponseToDatabase(
     ...originalMessage,
     userId: UserType.System,
     createdAt: Date.now(),
-    type: MessageType.Message,
     text: responseText,
   };
 
@@ -311,10 +310,7 @@ export const onNewMessageCreated = onValueCreated(
     if (validMessage.type === MessageType.Process) {
       logger.info(`Processing PROCESS for messsage '${messageId}'`);
       try {
-        await writeResponseToDatabase(
-          validMessage,
-          "Processing in progress...",
-        );
+        await writeResponseToDatabase(validMessage, "Processing...");
       } catch (error) {
         logger.error("Failed to process process and generate AI response", {
           error,
