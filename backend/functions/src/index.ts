@@ -70,7 +70,22 @@ const DEFAULT_USER_ID = "unknown";
 const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
+
+// Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
+const IMAGE_FILE_EXTENSION = ".png";
+const IMAGE_CONTENT_TYPE = "image/png";
+const STORAGE_BASE_URL = "https://storage.googleapis.com";
+
+// Image generation configuration
+const MAX_IMAGE_PROMPT_LENGTH = 500;
+const SOCIAL_MEDIA_POST_REGEX = /## Social Media Post\s+([\s\S]+)/i;
+const IMAGE_PROMPT_BASE =
+  "Create a professional, eye-catching social media " +
+  "graphic with the following content: ";
+const IMAGE_PROMPT_STYLE =
+  ". Style: modern, clean, professional business " +
+  "aesthetic with bold typography.";
 
 /**
  * RequestMetadata type definition for logging request information.
@@ -363,26 +378,63 @@ async function generateSessionSummary(
 }
 
 /**
+ * Extracts social media content from summary text.
+ * @param {string} summaryText The summary text to extract from.
+ * @return {string} The extracted social media content or full summary.
+ */
+function extractSocialMediaContent(summaryText: string): string {
+  const socialMediaMatch = summaryText.match(SOCIAL_MEDIA_POST_REGEX);
+  return socialMediaMatch ? socialMediaMatch[1].trim() : summaryText;
+}
+
+/**
  * Creates an image prompt from the summary text.
  * @param {string} summaryText The summary text to extract prompt from.
  * @return {string} The image generation prompt.
  */
 function createImagePromptFromSummary(summaryText: string): string {
-  // Extract social media post section for image generation
-  const socialMediaMatch = summaryText.match(
-    /## Social Media Post\s+([\s\S]+)/i,
+  const socialContent = extractSocialMediaContent(summaryText);
+  const contentSnippet = socialContent.substring(0, MAX_IMAGE_PROMPT_LENGTH);
+
+  return `${IMAGE_PROMPT_BASE}${contentSnippet}${IMAGE_PROMPT_STYLE}`;
+}
+
+/**
+ * Type guard for inline data parts in AI response.
+ */
+type InlineDataPart = {
+  inlineData: { data: string; mimeType: string };
+};
+
+/**
+ * Extracts image data from AI response parts.
+ * @param {Array} parts The response parts to search.
+ * @return {InlineDataPart} The part containing image data.
+ * @throws {Error} If no image data is found.
+ */
+function extractImageDataFromParts(parts: unknown[]): InlineDataPart {
+  const imagePart = parts.find(
+    (part): part is InlineDataPart =>
+      typeof part === "object" &&
+      part !== null &&
+      "inlineData" in part &&
+      part.inlineData !== undefined,
   );
-  const socialContent = socialMediaMatch ? socialMediaMatch[1].trim() : summaryText;
 
-  const basePrompt =
-    "Create a professional, eye-catching social media " +
-    "graphic with the following content: ";
-  const contentSnippet = socialContent.substring(0, 500);
-  const styleGuide =
-    ". Style: modern, clean, professional business " +
-    "aesthetic with bold typography.";
+  if (!imagePart) {
+    throw new Error("Failed to generate image: No image data in response");
+  }
 
-  return `${basePrompt}${contentSnippet}${styleGuide}`;
+  return imagePart;
+}
+
+/**
+ * Converts base64 image data to buffer.
+ * @param {string} base64Data The base64 encoded image data.
+ * @return {Buffer} The image as a buffer.
+ */
+function base64ToBuffer(base64Data: string): Buffer {
+  return Buffer.from(base64Data, "base64");
 }
 
 /**
@@ -395,38 +447,38 @@ async function generateImageFromText(
   prompt: string,
   apiKey: string,
 ): Promise<Buffer> {
-  // Note: Image generation with @google/generative-ai is currently in preview
-  // This implementation uses a workaround approach
   const genAI = new GoogleGenerativeAI(apiKey);
-
-  // Use the Imagen model for image generation
-  // The API might require specific configuration based on SDK version
   const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
 
   const result = await model.generateContent(prompt);
-
-  // Extract image data from response
-  // Note: The exact response format may vary based on SDK version
-  const response = result.response;
-  const parts = response.candidates?.[0]?.content?.parts;
+  const parts = result.response.candidates?.[0]?.content?.parts;
 
   if (!parts || parts.length === 0) {
     throw new Error("Failed to generate image: No parts in response");
   }
 
-  // Check if any part contains inline data
-  const imagePart = parts.find(
-    (part): part is { inlineData: { data: string; mimeType: string } } =>
-      "inlineData" in part && part.inlineData !== undefined,
-  );
+  const imagePart = extractImageDataFromParts(parts);
+  return base64ToBuffer(imagePart.inlineData.data);
+}
 
-  if (!imagePart) {
-    throw new Error("Failed to generate image: No image data in response");
-  }
+/**
+ * Generates a storage file name for an image.
+ * @param {string} sessionId The session ID.
+ * @param {number} timestamp The timestamp.
+ * @return {string} The file path.
+ */
+function generateImageFileName(sessionId: string, timestamp: number): string {
+  return `${STORAGE_BUCKET_PATH}/${sessionId}/${timestamp}${IMAGE_FILE_EXTENSION}`;
+}
 
-  // Convert base64 to buffer
-  const base64Image = imagePart.inlineData.data;
-  return Buffer.from(base64Image, "base64");
+/**
+ * Constructs a public storage URL.
+ * @param {string} bucketName The storage bucket name.
+ * @param {string} fileName The file path.
+ * @return {string} The public URL.
+ */
+function buildStorageUrl(bucketName: string, fileName: string): string {
+  return `${STORAGE_BASE_URL}/${bucketName}/${fileName}`;
 }
 
 /**
@@ -443,12 +495,12 @@ async function uploadImageToStorage(
   const bucket = storage.bucket();
 
   const timestamp = Date.now();
-  const fileName = `${STORAGE_BUCKET_PATH}/${sessionId}/${timestamp}.png`;
+  const fileName = generateImageFileName(sessionId, timestamp);
   const file = bucket.file(fileName);
 
   await file.save(imageBuffer, {
     metadata: {
-      contentType: "image/png",
+      contentType: IMAGE_CONTENT_TYPE,
       metadata: {
         sessionId,
         timestamp: timestamp.toString(),
@@ -456,10 +508,9 @@ async function uploadImageToStorage(
     },
   });
 
-  // Make the file publicly accessible
   await file.makePublic();
 
-  return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+  return buildStorageUrl(bucket.name, fileName);
 }
 
 /**
@@ -574,7 +625,7 @@ export const onNewMessageCreated = onValueCreated(
           apiKey,
         );
 
-        const imageMessage = `🖼️ Social media image generated: ${imageUrl}`;
+        const imageMessage = `Social media image generated: ${imageUrl}`;
         await writeResponseToDatabase(validMessage, imageMessage);
       } catch (error) {
         logger.error(
