@@ -415,17 +415,36 @@ async function generateImageFromText(
   apiKey: string,
 ): Promise<Buffer> {
   const ai = new GoogleGenAI({ apiKey });
-  const result = await ai.models.generateContent({
+
+  const generationConfig = {
+    temperature: 1,
+    max_output_tokens: 65536,
+    topP: 0.95,
+    thinkingLevel: "minimal",
+  };
+
+  const interaction = await ai.interactions.create({
     model: IMAGE_MODEL_NAME,
-    contents: prompt,
+    input: prompt,
+    generation_config: generationConfig,
+    response_modalities: ["image"],
   });
 
-  const base64Image = result.data;
-  if (!base64Image) {
-    throw new Error("Failed to generate image: No image data in response");
+  if (interaction.steps) {
+    for (const step of interaction.steps) {
+      if (step.type === "model_output" && step.content) {
+        for (const part of step.content) {
+          if (part.type === "image") {
+            const imageBuffer = Buffer.from(part.data!, "base64");
+            if (imageBuffer.length > 0) {
+              return imageBuffer;
+            }
+          }
+        }
+      }
+    }
   }
-
-  return Buffer.from(base64Image, "base64");
+  throw new Error("No image data returned by the model.");
 }
 
 /**
