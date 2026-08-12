@@ -1,4 +1,5 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { ChatMessage } from '../types/chat';
 import { t } from '../i18n';
 
@@ -11,6 +12,92 @@ export function ChatMessageList({
   messages,
   currentUserId,
 }: ChatMessageListProps) {
+  const getMarkdownStyles = (isMine: boolean) => ({
+    body: {
+      color: '#00ff00',
+      fontSize: 15,
+    },
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 4,
+      color: '#00ff00',
+    },
+    strong: {
+      color: '#00ff00',
+      fontWeight: 'bold' as const,
+    },
+    em: {
+      color: '#00ff00',
+      fontStyle: 'italic' as const,
+    },
+    link: {
+      color: '#00dd00',
+      textDecorationLine: 'underline' as const,
+    },
+    code_inline: {
+      backgroundColor: '#001100',
+      color: '#00ff00',
+      borderWidth: 1,
+      borderColor: '#003300',
+      borderRadius: 3,
+      paddingHorizontal: 4,
+      paddingVertical: 2,
+    },
+    code_block: {
+      backgroundColor: '#001100',
+      color: '#00ff00',
+      borderWidth: 1,
+      borderColor: '#003300',
+      borderRadius: 3,
+      padding: 8,
+      marginVertical: 4,
+    },
+    fence: {
+      backgroundColor: '#001100',
+      color: '#00ff00',
+      borderWidth: 1,
+      borderColor: '#003300',
+      borderRadius: 3,
+      padding: 8,
+      marginVertical: 4,
+    },
+    blockquote: {
+      backgroundColor: '#001100',
+      borderLeftColor: '#00ff00',
+      borderLeftWidth: 3,
+      paddingLeft: 8,
+      marginVertical: 4,
+      color: '#00ff00',
+    },
+    list_item: {
+      color: '#00ff00',
+    },
+    bullet_list: {
+      color: '#00ff00',
+    },
+    ordered_list: {
+      color: '#00ff00',
+    },
+    heading1: {
+      color: '#00ff00',
+      fontWeight: 'bold' as const,
+      fontSize: 20,
+      marginVertical: 4,
+    },
+    heading2: {
+      color: '#00ff00',
+      fontWeight: 'bold' as const,
+      fontSize: 18,
+      marginVertical: 4,
+    },
+    heading3: {
+      color: '#00ff00',
+      fontWeight: 'bold' as const,
+      fontSize: 16,
+      marginVertical: 4,
+    },
+  });
+
   return (
     <FlatList
       data={messages}
@@ -27,9 +114,9 @@ export function ChatMessageList({
               isMine ? styles.myMessage : styles.otherMessage,
             ]}
           >
-            <Text style={[styles.messageText, isMine && styles.myMessageText]}>
+            <Markdown style={getMarkdownStyles(isMine)}>
               {item.text}
-            </Text>
+            </Markdown>
             <View style={styles.metaContainer}>
               <Text style={styles.messageType}>[{item.type.toUpperCase()}]</Text>
               <Text style={[styles.messageMeta, isMine && styles.myMessageMeta]}>
@@ -74,13 +161,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderWidth: 1,
     borderColor: '#00ff00',
-  },
-  messageText: {
-    color: '#00ff00',
-    fontSize: 15,
-  },
-  myMessageText: {
-    color: '#00ff00',
   },
   metaContainer: {
     flexDirection: 'row',

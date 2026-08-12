@@ -12,11 +12,8 @@ function parseMessageType(rawType: unknown): MessageType {
 
   const typeMap: Record<string, MessageType> = {
     message: MessageType.Message,
-    [MessageType.Message]: MessageType.Message,
     post: MessageType.Post,
-    [MessageType.Post]: MessageType.Post,
     echo: MessageType.Echo,
-    [MessageType.Echo]: MessageType.Echo,
   };
 
   return typeMap[rawType] ?? MessageType.Message;
