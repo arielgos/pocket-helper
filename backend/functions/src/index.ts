@@ -22,6 +22,31 @@ const HTTP_STATUS_OK = 200;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HEALTH_CHECK_RESPONSE = "OK";
 
+// AI Prompt templates
+const RESEARCH_PROMPT_TEMPLATE = `Role: Act as an expert research analyst and subject-matter expert.
+Task: Conduct a detailed research and analysis task on the topic provided below, incorporating
+insights from the specified external link as well as up-to-date web research.
+
+Inputs:
+Topic: {topics}
+External Link: {url}
+
+Instructions:
+1. Analyze the Link: Access and review the provided link. Extract its core arguments, key
+findings, data points, and any unique perspectives.
+2. Conduct Supplemental Research: Search for additional relevant, reliable, and recent context
+on the topic to expand upon, verify, or provide counter-perspectives to the link's content.
+3. Synthesize Findings: Combine the insights into a cohesive research brief.
+
+Output Format:
+- Executive Summary: A brief 3–4 sentence overview of the topic and the link's primary takeaway.
+- Core Insights from the Link: Key points, stats, or arguments from the URL.
+- Broader Context & Additional Findings: Important background, trends, or facts discovered
+through additional research.
+- Comparison / Critical Nuances: How the link's perspective compares with broader industry
+consensus or alternative viewpoints.
+- Key Takeaways & Next Steps: 3–5 bullet points summarizing what's most important to know.`;
+
 /**
  * RequestMetadata type definition for logging request information.
  */
@@ -149,6 +174,43 @@ async function generateAiResponse(
 }
 
 /**
+ * Generates AI research response using Gemini model with research prompt.
+ * @param {string} messageText The message text in format: topic [url].
+ * @param {string} apiKey The Gemini API key.
+ * @return {Promise<string>} The generated research response text.
+ */
+async function generateAiResearchResponse(
+  messageText: string,
+  apiKey: string,
+): Promise<string> {
+  // Parse message to extract URL from square brackets and topic
+  // Expected format: ${topic} [${url}]
+  const bracketUrlRegex = /\[(https?:\/\/[^\]]+)\]/i;
+  const match = messageText.match(bracketUrlRegex);
+
+  if (!match) {
+    throw new Error(
+      "No URL found in message text. Expected format: topic [url]",
+    );
+  }
+
+  const url = match[1];
+  const topics =
+    messageText.replace(bracketUrlRegex, "").trim() || "General research";
+
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+
+  const prompt = RESEARCH_PROMPT_TEMPLATE.replace("{topics}", topics).replace(
+    "{url}",
+    url,
+  );
+
+  const result = await model.generateContent(prompt);
+  return result.response.text();
+}
+
+/**
  * Writes AI response to the database.
  * @param {Message} originalMessage The original message data.
  * @param {string} responseText The AI response text.
@@ -212,6 +274,21 @@ export const onNewMessageCreated = onValueCreated(
         await writeAiResponseToDatabase(validMessage, responseText);
       } catch (error) {
         logger.error("Failed to process message and generate AI response", {
+          error,
+          sessionId: validMessage.sessionId,
+        });
+      }
+    }
+
+    if (validMessage.type === MessageType.Post) {
+      try {
+        const responseText = await generateAiResearchResponse(
+          validMessage.text,
+          apiKey,
+        );
+        await writeAiResponseToDatabase(validMessage, responseText);
+      } catch (error) {
+        logger.error("Failed to process post and generate AI response", {
           error,
           sessionId: validMessage.sessionId,
         });
