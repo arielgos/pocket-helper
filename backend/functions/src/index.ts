@@ -418,7 +418,7 @@ async function generateImageFromText(
   const generationConfig = {
     temperature: 1,
     max_output_tokens: 65536,
-    topP: 0.95,
+    top_p: 0.95,
     thinkingLevel: "minimal",
   };
 
