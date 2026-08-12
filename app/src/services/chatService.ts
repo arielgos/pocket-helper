@@ -1,29 +1,52 @@
-import { push, query, ref, limitToLast, onValue, set, get, off } from 'firebase/database';
-import { db } from '../firebase';
-import { ChatMessage, RawChatMessage } from '../types/chat';
-import { saveMessageToSession, clearSessionMessages } from './sessionService';
+import {
+  push,
+  query,
+  ref,
+  limitToLast,
+  onValue,
+  set,
+  get,
+  off,
+} from "firebase/database";
+import { db } from "../firebase";
+import { ChatMessage, RawChatMessage, MessageType } from "../types/chat";
+import { saveMessageToSession, clearSessionMessages } from "./sessionService";
+import { MAX_MESSAGES_TO_LOAD } from "../constants/chat";
+
+function parseMessageType(rawType: unknown): MessageType {
+  if (typeof rawType !== "string") {
+    return MessageType.Message;
+  }
+
+  const typeMap: Record<string, MessageType> = {
+    message: MessageType.Message,
+    [MessageType.Message]: MessageType.Message,
+    post: MessageType.Post,
+    [MessageType.Post]: MessageType.Post,
+    echo: MessageType.Echo,
+    [MessageType.Echo]: MessageType.Echo,
+  };
+
+  return typeMap[rawType] ?? MessageType.Message;
+}
 
 function normalizeMessage(
   id: string,
-  value: RawChatMessage
+  value: RawChatMessage,
 ): ChatMessage | null {
-  if (typeof value.text !== 'string' || value.text.trim() === '') {
+  if (typeof value.text !== "string" || value.text.trim() === "") {
     return null;
   }
 
-  if (typeof value.createdAt !== 'number') {
+  if (typeof value.createdAt !== "number") {
     return null;
   }
 
-  if (typeof value.userId !== 'string' || value.userId.trim() === '') {
+  if (typeof value.userId !== "string" || value.userId.trim() === "") {
     return null;
   }
 
-  // Default to 'message' type if not specified (for backward compatibility)
-  const messageType = typeof value.type === 'string' && 
-    (value.type === 'message' || value.type === 'post' || value.type === 'echo') 
-    ? value.type 
-    : 'message';
+  const messageType = parseMessageType(value.type);
 
   return {
     id,
@@ -36,16 +59,19 @@ function normalizeMessage(
 }
 
 export function createCurrentUserId(): string {
-  return 'arielgos';
+  return "arielgos";
 }
 
 // Subscribe to messages from a specific session
 export function subscribeToSessionMessages(
   sessionId: string,
   onMessages: (messages: ChatMessage[]) => void,
-  onError: (message: string) => void
+  onError: (message: string) => void,
 ): () => void {
-  const messagesRef = query(ref(db, `sessions/${sessionId}/messages`), limitToLast(200));
+  const messagesRef = query(
+    ref(db, `sessions/${sessionId}/messages`),
+    limitToLast(MAX_MESSAGES_TO_LOAD),
+  );
 
   const unsubscribe = onValue(
     messagesRef,
@@ -67,7 +93,7 @@ export function subscribeToSessionMessages(
     },
     (error) => {
       onError(error.message);
-    }
+    },
   );
 
   // Return proper cleanup function
@@ -79,17 +105,19 @@ export function subscribeToSessionMessages(
 // Deprecated: kept for backward compatibility
 export function subscribeToChatMessages(
   onMessages: (messages: ChatMessage[]) => void,
-  onError: (message: string) => void
+  onError: (message: string) => void,
 ): () => void {
-  console.warn('subscribeToChatMessages is deprecated. Use subscribeToSessionMessages instead.');
-  return subscribeToSessionMessages('default', onMessages, onError);
+  console.warn(
+    "subscribeToChatMessages is deprecated. Use subscribeToSessionMessages instead.",
+  );
+  return subscribeToSessionMessages("default", onMessages, onError);
 }
 
 export async function sendChatMessage(params: {
   text: string;
   userId: string;
   sessionId: string;
-  type?: 'message' | 'post' | 'echo';
+  type?: MessageType;
 }): Promise<void> {
   // Only save to session-specific storage
   const newMessage: ChatMessage = {
@@ -98,15 +126,17 @@ export async function sendChatMessage(params: {
     createdAt: Date.now(),
     userId: params.userId,
     sessionId: params.sessionId,
-    type: params.type || 'message'
+    type: params.type || MessageType.Message,
   };
-  
+
   await saveMessageToSession(params.sessionId, newMessage);
 }
 
 export async function clearAllMessages(): Promise<void> {
-  console.warn('clearAllMessages is deprecated. Use clearMessagesBySession instead.');
-  await clearSessionMessages('default');
+  console.warn(
+    "clearAllMessages is deprecated. Use clearMessagesBySession instead.",
+  );
+  await clearSessionMessages("default");
 }
 
 export async function clearMessagesBySession(sessionId: string): Promise<void> {

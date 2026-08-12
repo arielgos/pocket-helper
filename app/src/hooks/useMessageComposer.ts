@@ -1,15 +1,28 @@
 import { useCallback, useMemo, useState } from "react";
 import { t } from "../i18n";
 import { validateMessageUnderstandability } from "../messageValidation";
-import {
-  sendChatMessage,
-  clearMessagesBySession,
-} from "../services/chatService";
-import {
-  createSession,
-  deleteSession,
-} from "../services/sessionService";
+import { sendChatMessage } from "../services/chatService";
 import { useSession } from "../context/SessionContext";
+import { MessageType } from "../types/chat";
+import {
+  COMMAND_PREFIX,
+  COMMAND_HELP,
+  COMMAND_ECHO,
+  COMMAND_CLEAR,
+  COMMAND_SESSIONS,
+  COMMAND_SESSION,
+  COMMAND_REMOVE,
+  COMMAND_POST,
+} from "../constants/chat";
+import {
+  handleHelpCommand,
+  handleEchoCommand,
+  handleClearCommand,
+  handleSessionsCommand,
+  handleSessionCommand,
+  handleRemoveCommand,
+  handlePostCommand,
+} from "./commandHandlers";
 
 export function useMessageComposer(userId: string) {
   const [inputValue, setInputValue] = useState("");
@@ -18,7 +31,6 @@ export function useMessageComposer(userId: string) {
   const [showCommandHelp, setShowCommandHelp] = useState(false);
   const [showSessionsList, setShowSessionsList] = useState(false);
   const { currentSessionId, sessions, switchSession, refreshSessions } = useSession();
-  const sessionsList = sessions;
 
   const canSend = useMemo(
     () => inputValue.trim().length > 0 && !validatingMessage,
@@ -32,158 +44,54 @@ export function useMessageComposer(userId: string) {
       return;
     }
 
+    const commandParams = {
+      userId,
+      currentSessionId,
+      setInputValue,
+      setErrorMessage,
+      setShowCommandHelp,
+      setShowSessionsList,
+      switchSession,
+      refreshSessions,
+    };
+
     // Check if this is a command
-    if (text.startsWith("/")) {
+    if (text.startsWith(COMMAND_PREFIX)) {
       const command = text.trim().toLowerCase();
 
-      // Handle /help command
-      if (command === "/help") {
-        setShowCommandHelp(true);
-        setInputValue("");
+      if (command === COMMAND_HELP) {
+        await handleHelpCommand(commandParams);
         return;
       }
 
-      // Handle /echo command
-      if (command.startsWith("/echo ")) {
-        const echoMessage = command.substring(6).trim(); // Remove "/echo " and trim
-        if (echoMessage) {
-          await sendChatMessage({
-            text: echoMessage,
-            userId,
-            sessionId: currentSessionId,
-            type: 'echo',
-          });
-          setInputValue("");
-          setErrorMessage(null);
-          return;
-        } else {
-          setErrorMessage(t("errors.commandNotFound", { command: text }));
-          return;
-        }
-      }
-
-      // Handle /clear command
-      if (command === "/clear") {
-        try {
-          await clearMessagesBySession(currentSessionId);
-          setInputValue("");
-          setErrorMessage(null);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("errors.unknownValidationSend");
-          setErrorMessage(t("errors.failedValidateSend", { message }));
-        }
+      if (command.startsWith(COMMAND_ECHO)) {
+        await handleEchoCommand(command, commandParams);
         return;
       }
 
-      // Handle /sessions command
-      if (command === "/sessions") {
-        try {
-          await refreshSessions();
-          setShowSessionsList(true);
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("errors.unknownValidationSend");
-          setErrorMessage(t("errors.failedValidateSend", { message }));
-        }
-        setInputValue("");
+      if (command === COMMAND_CLEAR) {
+        await handleClearCommand(commandParams);
         return;
       }
 
-      // Handle /session command
-      if (command.startsWith("/session ")) {
-        const sessionName = command.substring(9).trim(); // Remove "/session " and trim
-        if (sessionName) {
-          try {
-            const newSession = await createSession(sessionName);
-            // Switch to the newly created session
-            await switchSession(newSession.id);
-            // Show feedback about session creation or switching
-            setErrorMessage(t("errors.sessionSwitched", { name: sessionName }));
-            setInputValue("");
-            return;
-          } catch (error) {
-            const message =
-              error instanceof Error
-                ? error.message
-                : t("errors.unknownValidationSend");
-            setErrorMessage(t("errors.failedValidateSend", { message }));
-          }
-          return;
-        } else {
-          setErrorMessage(t("errors.sessionNameRequired"));
-          setInputValue("");
-          return;
-        }
-      }
-
-      // Handle /remove command
-      if (command === "/remove" || command.startsWith("/remove ")) {
-        try {
-          // Prevent deletion of default session
-          if (currentSessionId === "default") {
-            setErrorMessage(t("errors.cannotDeleteDefaultSession"));
-            setInputValue("");
-            return;
-          }
-
-          // Delete the current session (this also handles switching to default)
-          await deleteSession(currentSessionId);
-          
-          // Refresh sessions list and switch to default session
-          await switchSession("default");
-          
-          setErrorMessage(t("errors.sessionDeleted"));
-        } catch (error) {
-          const message =
-            error instanceof Error
-              ? error.message
-              : t("errors.unknownValidationSend");
-          setErrorMessage(t("errors.failedValidateSend", { message }));
-        }
-        setInputValue("");
+      if (command === COMMAND_SESSIONS) {
+        await handleSessionsCommand(commandParams);
         return;
       }
 
-      // Handle /post command
-      if (command.startsWith("/post ")) {
-        const postCommand = command.substring(6).trim(); // Remove "/post " and trim
-        if (postCommand) {
-          // Parse topic and link from the command
-          const parts = postCommand.split(" ");
-          if (parts.length >= 2) {
-            const topic = parts[0];
-            const link = parts.slice(1).join(" ");
-            console.log("Parsed topic:", topic, "Parsed link:", link); // Debug log
+      if (command.startsWith(COMMAND_SESSION)) {
+        await handleSessionCommand(command, commandParams);
+        return;
+      }
 
-            // Validate that link looks like a URL (basic validation)
-            if (link.startsWith("http://") || link.startsWith("https://")) {
-              const formattedMessage = `${topic} [${link}]`;
-              await sendChatMessage({
-                text: formattedMessage,
-                userId,
-                sessionId: currentSessionId,
-                type: 'post',
-              });
-              setInputValue("");
-              setErrorMessage(null);
-              return;
-            } else {
-              setErrorMessage(t("errors.invalidLinkFormat"));
-              return;
-            }
-          } else {
-            setErrorMessage(t("errors.postCommandFormat"));
-            return;
-          }
-        } else {
-          setErrorMessage(t("errors.postCommandFormat"));
-          return;
-        }
+      if (command === COMMAND_REMOVE || command.startsWith(`${COMMAND_REMOVE} `)) {
+        await handleRemoveCommand(commandParams);
+        return;
+      }
+
+      if (command.startsWith(COMMAND_POST)) {
+        await handlePostCommand(command, commandParams);
+        return;
       }
 
       // Handle unknown command
@@ -191,6 +99,7 @@ export function useMessageComposer(userId: string) {
       return;
     }
 
+    // Handle regular message with validation
     setValidatingMessage(true);
 
     try {
@@ -207,7 +116,7 @@ export function useMessageComposer(userId: string) {
         text,
         userId,
         sessionId: currentSessionId,
-        type: 'message',
+        type: MessageType.Message,
       });
       setInputValue("");
       setErrorMessage(null);
@@ -233,6 +142,6 @@ export function useMessageComposer(userId: string) {
     setShowCommandHelp,
     showSessionsList,
     setShowSessionsList,
-    sessionsList,
+    sessions,
   };
 }

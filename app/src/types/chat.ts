@@ -1,4 +1,8 @@
-export type MessageType = 'message' | 'post' | 'echo';
+export enum MessageType {
+  Message = "message",
+  Post = "post",
+  Echo = "echo",
+}
 
 export type ChatMessage = {
   id: string;

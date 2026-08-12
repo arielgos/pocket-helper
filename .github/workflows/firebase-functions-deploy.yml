@@ -29,5 +29,9 @@ jobs:
       - name: Install function dependencies
         run: npm --prefix functions ci
 
+      - name: Create .env file for Firebase Functions
+        run: |
+          echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" > functions/.env
+
       - name: Deploy functions
         run: npx firebase-tools deploy --only functions --project pocket-helper-a4bc4

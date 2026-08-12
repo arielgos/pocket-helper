@@ -32,7 +32,7 @@ const AppWithSessionProvider: React.FC = () => {
     setShowCommandHelp,
     showSessionsList,
     setShowSessionsList,
-    sessionsList,
+    sessions,
   } = useMessageComposer(currentUserId);
 
   return (
@@ -75,7 +75,7 @@ const AppWithSessionProvider: React.FC = () => {
         <SessionsModal
           visible={showSessionsList}
           onClose={() => setShowSessionsList(false)}
-          sessions={sessionsList}
+          sessions={sessions}
         />
       </KeyboardAvoidingView>
     </SafeAreaView>

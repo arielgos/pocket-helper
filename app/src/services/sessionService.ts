@@ -2,7 +2,25 @@
 
 import { ref, set, get, update, push, remove } from 'firebase/database';
 import { db } from '../firebase';
-import { ChatMessage } from '../types/chat';
+import { ChatMessage, MessageType } from '../types/chat';
+import { DEFAULT_SESSION_ID } from '../constants/chat';
+
+function parseMessageType(rawType: unknown): MessageType {
+  if (typeof rawType !== "string") {
+    return MessageType.Message;
+  }
+
+  const typeMap: Record<string, MessageType> = {
+    message: MessageType.Message,
+    [MessageType.Message]: MessageType.Message,
+    post: MessageType.Post,
+    [MessageType.Post]: MessageType.Post,
+    echo: MessageType.Echo,
+    [MessageType.Echo]: MessageType.Echo,
+  };
+
+  return typeMap[rawType] ?? MessageType.Message;
+}
 
 export type Session = {
   id: string;
@@ -103,7 +121,7 @@ export async function createSession(name: string): Promise<Session> {
 export async function setCurrentSession(sessionId: string): Promise<void> {
   try {
     const currentSessionRef = ref(db, 'current_session');
-    await set(currentSessionRef, sessionId || "default");
+    await set(currentSessionRef, sessionId || DEFAULT_SESSION_ID);
   } catch (error) {
     console.error('Failed to set current session:', error);
     throw error;
@@ -119,19 +137,17 @@ export async function getCurrentSessionId(): Promise<string> {
       return snapshot.val();
     }
     
-    // Return "default" as the default session instead of null
-    return "default";
+    return DEFAULT_SESSION_ID;
   } catch (error) {
     console.error('Failed to get current session:', error);
-    // Return "default" as the default session instead of null
-    return "default";
+    return DEFAULT_SESSION_ID;
   }
 }
 
 export async function deleteSession(sessionId: string): Promise<void> {
   try {
     // Prevent deletion of default session
-    if (sessionId === "default") {
+    if (sessionId === DEFAULT_SESSION_ID) {
       throw new Error("Cannot delete the default session");
     }
     
@@ -141,7 +157,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
     
     // Remove session metadata from sessions list
     const sessionsRef = ref(db, 'sessions');
-    const updateData: any = {};
+    const updateData: Record<string, null> = {};
     updateData[`/${sessionId}`] = null;
     await update(sessionsRef, updateData);
     
@@ -149,7 +165,7 @@ export async function deleteSession(sessionId: string): Promise<void> {
     const currentSessionId = await getCurrentSessionId();
     if (currentSessionId === sessionId) {
       const currentSessionRef = ref(db, 'current_session');
-      await set(currentSessionRef, "default");
+      await set(currentSessionRef, DEFAULT_SESSION_ID);
     }
   } catch (error) {
     console.error('Failed to delete session:', error);
@@ -170,7 +186,7 @@ export async function getSessionMessages(sessionId: string): Promise<ChatMessage
         createdAt: messagesData[id].createdAt,
         userId: messagesData[id].userId,
         sessionId: sessionId,
-        type: messagesData[id].type || 'message'
+        type: parseMessageType(messagesData[id].type)
       }));
     }
     
