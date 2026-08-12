@@ -450,16 +450,16 @@ async function generateImageFromText(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
 
-  logger.info("Generating image with prompt", { prompt });
-
   const result = await model.generateContent(prompt);
+  logger.debug("Image generation response received", { result });
   const parts = result.response.candidates?.[0]?.content?.parts;
-
+  logger.debug("Extracted parts from response", { parts });
   if (!parts || parts.length === 0) {
     throw new Error("Failed to generate image: No parts in response");
   }
-
+  logger.debug("Extracted parts from response", { parts });
   const imagePart = extractImageDataFromParts(parts);
+  logger.debug("Extracted image part from response", { imagePart });
   return base64ToBuffer(imagePart.inlineData.data);
 }
 
