@@ -266,6 +266,9 @@ export const onNewMessageCreated = onValueCreated(
     }
 
     if (validMessage.type === MessageType.Message) {
+      logger.info(
+        `Processing MESSAGE for messsage '${validMessage.messageId}'`,
+      );
       try {
         const responseText = await generateAiResponse(
           validMessage.text,
@@ -278,9 +281,11 @@ export const onNewMessageCreated = onValueCreated(
           sessionId: validMessage.sessionId,
         });
       }
+      return;
     }
 
     if (validMessage.type === MessageType.Post) {
+      logger.info(`Processing POST for messsage '${validMessage.messageId}'`);
       try {
         const responseText = await generateAiResearchResponse(
           validMessage.text,
@@ -293,6 +298,7 @@ export const onNewMessageCreated = onValueCreated(
           sessionId: validMessage.sessionId,
         });
       }
+      return;
     }
   },
 );
