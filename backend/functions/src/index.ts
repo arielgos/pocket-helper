@@ -10,6 +10,7 @@ import * as logger from "firebase-functions/logger";
 import type { Response } from "express";
 import { defineString } from "firebase-functions/params";
 import { GoogleGenAI } from "@google/genai";
+import type { Interactions } from "@google/genai";
 import { getDatabase } from "firebase-admin/database";
 import type { DataSnapshot as AdminDataSnapshot } from "firebase-admin/database";
 import { getStorage, getDownloadURL } from "firebase-admin/storage";
@@ -75,7 +76,6 @@ const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
 const STORAGE_BUCKET_PATH = "session-summaries";
 const IMAGE_FILE_EXTENSION = ".jpg";
 const IMAGE_CONTENT_TYPE = "image/jpeg";
-const STORAGE_BASE_URL = "https://storage.googleapis.com";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
@@ -431,22 +431,24 @@ async function generateImageFromText(
 
   logger.info("Prompt sent to Gemini for image generation", { prompt });
 
-  const steps = interaction.steps
-    .filter((step) => step.type === "model_output" && step.content)
-    .map((step) => step as any);
+  // Union type "Step" only exposes `content` on the "model_output" variant.
+  const modelOutputSteps = interaction.steps.filter(
+    (step): step is Interactions.ModelOutputStep =>
+      step.type === "model_output",
+  );
 
-  console.debug("Image generation steps received from Gemini", { steps });
-
-  const imagePart = steps
-    .flatMap((s) => s.content || [])
-    .find((part: any) => part.data || part.inlineData?.data);
+  const imagePart = modelOutputSteps
+    .flatMap((step) => step.content ?? [])
+    .find(
+      (content): content is Interactions.ImageContent =>
+        content.type === "image" && !!content.data,
+    );
 
   if (!imagePart) {
     throw new Error("No image data found in response steps.");
   }
 
-  const base64Data = imagePart.data || imagePart.inlineData.data;
-  return Buffer.from(base64Data, "base64");
+  return Buffer.from(imagePart.data as string, "base64");
 }
 
 /**
