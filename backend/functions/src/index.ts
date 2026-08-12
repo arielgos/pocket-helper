@@ -256,12 +256,18 @@ export const onNewMessageCreated = onValueCreated(
       return;
     }
 
-    // TypeScript knows messageData is not null after validation
     const validMessage = messageData as Message;
 
     const apiKey = geminiApiKey.value();
     if (!apiKey) {
       logger.error("GEMINI_API_KEY is not defined!");
+      return;
+    }
+
+    if (validMessage.type === MessageType.Echo) {
+      logger.info(
+        `Received ECHO message '${validMessage.messageId}' Ignoring.`,
+      );
       return;
     }
 
