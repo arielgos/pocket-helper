@@ -12,7 +12,7 @@ import { defineString } from "firebase-functions/params";
 import { GoogleGenAI } from "@google/genai";
 import { getDatabase } from "firebase-admin/database";
 import type { DataSnapshot as AdminDataSnapshot } from "firebase-admin/database";
-import { getStorage } from "firebase-admin/storage";
+import { getStorage, getDownloadURL } from "firebase-admin/storage";
 
 // Configuration constants
 const FUNCTION_MAX_INSTANCES = 10;
@@ -460,16 +460,6 @@ function generateImageFileName(sessionId: string, timestamp: number): string {
 }
 
 /**
- * Constructs a public storage URL.
- * @param {string} bucketName The storage bucket name.
- * @param {string} fileName The file path.
- * @return {string} The public URL.
- */
-function buildStorageUrl(bucketName: string, fileName: string): string {
-  return `${STORAGE_BASE_URL}/${bucketName}/${fileName}`;
-}
-
-/**
  * Uploads an image buffer to Firebase Storage.
  * @param {Buffer} imageBuffer The image data to upload.
  * @param {string} sessionId The session ID for organizing files.
@@ -496,9 +486,7 @@ async function uploadImageToStorage(
     },
   });
 
-  await file.makePublic();
-
-  return buildStorageUrl(bucket.name, fileName);
+  return getDownloadURL(file);
 }
 
 /**
