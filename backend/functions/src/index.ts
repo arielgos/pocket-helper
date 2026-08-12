@@ -8,6 +8,7 @@ const FUNCTION_MAX_INSTANCES = 10;
 
 // Response constants
 const HTTP_STATUS_OK = 200;
+const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HEALTH_CHECK_RESPONSE = "OK";
 
 /**
@@ -57,7 +58,7 @@ export const health = onRequest(
       response.status(HTTP_STATUS_OK).send(HEALTH_CHECK_RESPONSE);
     } catch (error) {
       logger.error("Health check failed", { error });
-      response.status(500).send("Internal Server Error");
+      response.status(HTTP_INTERNAL_SERVER_ERROR).send("Internal Server Error");
     }
   },
 );
