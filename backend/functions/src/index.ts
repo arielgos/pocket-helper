@@ -12,10 +12,12 @@ import { defineString } from "firebase-functions/params";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { getDatabase } from "firebase-admin/database";
 import type { DataSnapshot as AdminDataSnapshot } from "firebase-admin/database";
+import { getStorage } from "firebase-admin/storage";
 
 // Configuration constants
 const FUNCTION_MAX_INSTANCES = 10;
 const GEMINI_MODEL_NAME = "gemini-3.6-flash";
+const IMAGE_MODEL_NAME = "gemini-2.5-flash-image";
 const MESSAGES_COLLECTION_PATH = "/sessions/{sessionId}/messages/{messageId}";
 
 // Response constants
@@ -23,7 +25,7 @@ const HTTP_STATUS_OK = 200;
 const HTTP_INTERNAL_SERVER_ERROR = 500;
 const HEALTH_CHECK_RESPONSE = "OK";
 
-// AI Prompt templates
+// Prompt template for research and analysis tasks
 const RESEARCH_PROMPT_TEMPLATE = `Role: Act as an expert research analyst and subject-matter expert.
 Task: Conduct a detailed research and analysis task on the topic provided below, incorporating
 insights from the specified external link as well as up-to-date web research.
@@ -46,6 +48,7 @@ through additional research.
 consensus or alternative viewpoints.
 - Key Takeaways & Next Steps: 3–5 bullet points summarizing what's most important to know.`;
 
+// Prompt template for generating a summary and social media post
 const SUMMARY_PROMPT_TEMPLATE = `You are a content strategist and social media expert.
 Analyze the following conversation and create:
 1. A comprehensive summary highlighting the key points, decisions, and insights
@@ -66,6 +69,8 @@ Please provide your response in the following format:
 const DEFAULT_USER_ID = "unknown";
 const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
+const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
+const STORAGE_BUCKET_PATH = "session-summaries";
 
 /**
  * RequestMetadata type definition for logging request information.
@@ -358,6 +363,130 @@ async function generateSessionSummary(
 }
 
 /**
+ * Creates an image prompt from the summary text.
+ * @param {string} summaryText The summary text to extract prompt from.
+ * @return {string} The image generation prompt.
+ */
+function createImagePromptFromSummary(summaryText: string): string {
+  // Extract social media post section for image generation
+  const socialMediaMatch = summaryText.match(
+    /## Social Media Post\s+([\s\S]+)/i,
+  );
+  const socialContent = socialMediaMatch ? socialMediaMatch[1].trim() : summaryText;
+
+  const basePrompt =
+    "Create a professional, eye-catching social media " +
+    "graphic with the following content: ";
+  const contentSnippet = socialContent.substring(0, 500);
+  const styleGuide =
+    ". Style: modern, clean, professional business " +
+    "aesthetic with bold typography.";
+
+  return `${basePrompt}${contentSnippet}${styleGuide}`;
+}
+
+/**
+ * Generates an image from text using Google's Imagen model.
+ * @param {string} prompt The text prompt for image generation.
+ * @param {string} apiKey The Gemini API key.
+ * @return {Promise<Buffer>} The generated image as a buffer.
+ */
+async function generateImageFromText(
+  prompt: string,
+  apiKey: string,
+): Promise<Buffer> {
+  // Note: Image generation with @google/generative-ai is currently in preview
+  // This implementation uses a workaround approach
+  const genAI = new GoogleGenerativeAI(apiKey);
+
+  // Use the Imagen model for image generation
+  // The API might require specific configuration based on SDK version
+  const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
+
+  const result = await model.generateContent(prompt);
+
+  // Extract image data from response
+  // Note: The exact response format may vary based on SDK version
+  const response = result.response;
+  const parts = response.candidates?.[0]?.content?.parts;
+
+  if (!parts || parts.length === 0) {
+    throw new Error("Failed to generate image: No parts in response");
+  }
+
+  // Check if any part contains inline data
+  const imagePart = parts.find(
+    (part): part is { inlineData: { data: string; mimeType: string } } =>
+      "inlineData" in part && part.inlineData !== undefined,
+  );
+
+  if (!imagePart) {
+    throw new Error("Failed to generate image: No image data in response");
+  }
+
+  // Convert base64 to buffer
+  const base64Image = imagePart.inlineData.data;
+  return Buffer.from(base64Image, "base64");
+}
+
+/**
+ * Uploads an image buffer to Firebase Storage.
+ * @param {Buffer} imageBuffer The image data to upload.
+ * @param {string} sessionId The session ID for organizing files.
+ * @return {Promise<string>} The public URL of the uploaded image.
+ */
+async function uploadImageToStorage(
+  imageBuffer: Buffer,
+  sessionId: string,
+): Promise<string> {
+  const storage = getStorage();
+  const bucket = storage.bucket();
+
+  const timestamp = Date.now();
+  const fileName = `${STORAGE_BUCKET_PATH}/${sessionId}/${timestamp}.png`;
+  const file = bucket.file(fileName);
+
+  await file.save(imageBuffer, {
+    metadata: {
+      contentType: "image/png",
+      metadata: {
+        sessionId,
+        timestamp: timestamp.toString(),
+      },
+    },
+  });
+
+  // Make the file publicly accessible
+  await file.makePublic();
+
+  return `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+}
+
+/**
+ * Generates an image from summary text and uploads it to storage.
+ * @param {string} summaryText The summary text to create image from.
+ * @param {string} sessionId The session ID.
+ * @param {string} apiKey The Gemini API key.
+ * @return {Promise<string>} The public URL of the generated image.
+ */
+async function generateAndUploadSummaryImage(
+  summaryText: string,
+  sessionId: string,
+  apiKey: string,
+): Promise<string> {
+  const imagePrompt = createImagePromptFromSummary(summaryText);
+  logger.info("Generating image from summary", { sessionId });
+
+  const imageBuffer = await generateImageFromText(imagePrompt, apiKey);
+  logger.info("Image generated, uploading to storage", { sessionId });
+
+  const imageUrl = await uploadImageToStorage(imageBuffer, sessionId);
+  logger.info("Image uploaded successfully", { sessionId, imageUrl });
+
+  return imageUrl;
+}
+
+/**
  * Triggered when a new message is created in the database.
  * Processes user messages and generates AI responses.
  * @param event The database event containing the new message data and parameters.
@@ -435,6 +564,18 @@ export const onNewMessageCreated = onValueCreated(
         );
 
         await writeResponseToDatabase(validMessage, summaryText);
+
+        // Generate and upload social media image
+        await writeResponseToDatabase(validMessage, GENERATING_IMAGE_MESSAGE);
+
+        const imageUrl = await generateAndUploadSummaryImage(
+          summaryText,
+          validMessage.sessionId || "",
+          apiKey,
+        );
+
+        const imageMessage = `🖼️ Social media image generated: ${imageUrl}`;
+        await writeResponseToDatabase(validMessage, imageMessage);
       } catch (error) {
         logger.error(
           "Failed to generate session summary and social media post",
