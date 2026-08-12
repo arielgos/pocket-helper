@@ -450,6 +450,8 @@ async function generateImageFromText(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
 
+  logger.info("Generating image with prompt", { prompt });
+
   const result = await model.generateContent(prompt);
   const parts = result.response.candidates?.[0]?.content?.parts;
 
