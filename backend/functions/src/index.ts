@@ -447,9 +447,13 @@ async function generateImageFromText(
   prompt: string,
   apiKey: string,
 ): Promise<Buffer> {
+  logger.debug("Generating image from text prompt", { prompt });
   const genAI = new GoogleGenerativeAI(apiKey);
+  logger.debug("Initialized GoogleGenerativeAI with provided API key");
   const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
-
+  logger.debug("Retrieved generative model for image generation", {
+    modelName: IMAGE_MODEL_NAME,
+  });
   const result = await model.generateContent(prompt);
   logger.debug("Image generation response received", { result });
   const parts = result.response.candidates?.[0]?.content?.parts;
