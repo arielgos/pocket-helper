@@ -9,7 +9,7 @@ import { initializeApp } from "firebase-admin/app";
 import * as logger from "firebase-functions/logger";
 import type { Response } from "express";
 import { defineString } from "firebase-functions/params";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { getDatabase } from "firebase-admin/database";
 import type { DataSnapshot as AdminDataSnapshot } from "firebase-admin/database";
 import { getStorage } from "firebase-admin/storage";
@@ -228,10 +228,12 @@ async function generateAiResponse(
   messageText: string,
   apiKey: string,
 ): Promise<string> {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
-  const result = await model.generateContent(messageText);
-  return result.response.text();
+  const ai = new GoogleGenAI({ apiKey });
+  const result = await ai.models.generateContent({
+    model: GEMINI_MODEL_NAME,
+    contents: messageText,
+  });
+  return result.text || "";
 }
 
 /**
@@ -244,12 +246,14 @@ async function generateAiResearchResponse(
   messageText: string,
   apiKey: string,
 ): Promise<string> {
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL_NAME });
+  const ai = new GoogleGenAI({ apiKey });
   const prompt = RESEARCH_PROMPT_TEMPLATE.replace("{text}", messageText);
   logger.debug(`Generated research prompt: ${prompt}`);
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+  const result = await ai.models.generateContent({
+    model: GEMINI_MODEL_NAME,
+    contents: prompt,
+  });
+  return result.text || "";
 }
 
 /**
@@ -400,71 +404,28 @@ function createImagePromptFromSummary(summaryText: string): string {
 }
 
 /**
- * Type guard for inline data parts in AI response.
- */
-type InlineDataPart = {
-  inlineData: { data: string; mimeType: string };
-};
-
-/**
- * Extracts image data from AI response parts.
- * @param {Array} parts The response parts to search.
- * @return {InlineDataPart} The part containing image data.
- * @throws {Error} If no image data is found.
- */
-function extractImageDataFromParts(parts: unknown[]): InlineDataPart {
-  const imagePart = parts.find(
-    (part): part is InlineDataPart =>
-      typeof part === "object" &&
-      part !== null &&
-      "inlineData" in part &&
-      part.inlineData !== undefined,
-  );
-
-  if (!imagePart) {
-    throw new Error("Failed to generate image: No image data in response");
-  }
-
-  return imagePart;
-}
-
-/**
- * Converts base64 image data to buffer.
- * @param {string} base64Data The base64 encoded image data.
- * @return {Buffer} The image as a buffer.
- */
-function base64ToBuffer(base64Data: string): Buffer {
-  return Buffer.from(base64Data, "base64");
-}
-
-/**
- * Generates an image from text using Google's Imagen model.
+ * Generates an image from text using Gemini's native image generation model.
  * @param {string} prompt The text prompt for image generation.
  * @param {string} apiKey The Gemini API key.
  * @return {Promise<Buffer>} The generated image as a buffer.
+ * @throws {Error} If no image data is returned by the model.
  */
 async function generateImageFromText(
   prompt: string,
   apiKey: string,
 ): Promise<Buffer> {
-  logger.debug("Generating image from text prompt", { prompt });
-  const genAI = new GoogleGenerativeAI(apiKey);
-  logger.debug("Initialized GoogleGenerativeAI with provided API key");
-  const model = genAI.getGenerativeModel({ model: IMAGE_MODEL_NAME });
-  logger.debug("Retrieved generative model for image generation", {
-    modelName: IMAGE_MODEL_NAME,
+  const ai = new GoogleGenAI({ apiKey });
+  const result = await ai.models.generateContent({
+    model: IMAGE_MODEL_NAME,
+    contents: prompt,
   });
-  const result = await model.generateContent(prompt);
-  logger.debug("Image generation response received", { result });
-  const parts = result.response.candidates?.[0]?.content?.parts;
-  logger.debug("Extracted parts from response", { parts });
-  if (!parts || parts.length === 0) {
-    throw new Error("Failed to generate image: No parts in response");
+
+  const base64Image = result.data;
+  if (!base64Image) {
+    throw new Error("Failed to generate image: No image data in response");
   }
-  logger.debug("Extracted parts from response", { parts });
-  const imagePart = extractImageDataFromParts(parts);
-  logger.debug("Extracted image part from response", { imagePart });
-  return base64ToBuffer(imagePart.inlineData.data);
+
+  return Buffer.from(base64Image, "base64");
 }
 
 /**
@@ -622,17 +583,30 @@ export const onNewMessageCreated = onValueCreated(
 
         await writeResponseToDatabase(validMessage, summaryText);
 
-        // Generate and upload social media image
-        await writeResponseToDatabase(validMessage, GENERATING_IMAGE_MESSAGE);
+        // Attempt to generate and upload social media image
+        // This is wrapped in try-catch to prevent image generation
+        // failures from breaking the summary process
+        try {
+          await writeResponseToDatabase(validMessage, GENERATING_IMAGE_MESSAGE);
 
-        const imageUrl = await generateAndUploadSummaryImage(
-          summaryText,
-          validMessage.sessionId || "",
-          apiKey,
-        );
+          const imageUrl = await generateAndUploadSummaryImage(
+            summaryText,
+            validMessage.sessionId || "",
+            apiKey,
+          );
 
-        const imageMessage = `Social media image generated: ${imageUrl}`;
-        await writeResponseToDatabase(validMessage, imageMessage);
+          const imageMessage = `Social media image generated: ${imageUrl}`;
+          await writeResponseToDatabase(validMessage, imageMessage);
+        } catch (imageError) {
+          logger.warn("Image generation failed, continuing without image", {
+            error: imageError,
+            sessionId: validMessage.sessionId,
+          });
+          const fallbackMessage =
+            "⚠️ Image generation is currently unavailable. " +
+            "Summary has been generated successfully.";
+          await writeResponseToDatabase(validMessage, fallbackMessage);
+        }
       } catch (error) {
         logger.error(
           "Failed to generate session summary and social media post",
