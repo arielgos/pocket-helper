@@ -257,6 +257,7 @@ export const onNewMessageCreated = onValueCreated(
     }
 
     const validMessage = messageData as Message;
+    const messageId = event.params.messageId;
 
     const apiKey = geminiApiKey.value();
     if (!apiKey) {
@@ -265,16 +266,12 @@ export const onNewMessageCreated = onValueCreated(
     }
 
     if (validMessage.type === MessageType.Echo) {
-      logger.info(
-        `Received ECHO message '${validMessage.messageId}' Ignoring.`,
-      );
+      logger.info(`Received ECHO message '${messageId}' Ignoring.`);
       return;
     }
 
     if (validMessage.type === MessageType.Message) {
-      logger.info(
-        `Processing MESSAGE for messsage '${validMessage.messageId}'`,
-      );
+      logger.info(`Processing MESSAGE for messsage '${messageId}'`);
       try {
         const responseText = await generateAiResponse(
           validMessage.text,
@@ -291,7 +288,7 @@ export const onNewMessageCreated = onValueCreated(
     }
 
     if (validMessage.type === MessageType.Post) {
-      logger.info(`Processing POST for messsage '${validMessage.messageId}'`);
+      logger.info(`Processing POST for messsage '${messageId}'`);
       try {
         const responseText = await generateAiResearchResponse(
           validMessage.text,
@@ -306,5 +303,9 @@ export const onNewMessageCreated = onValueCreated(
       }
       return;
     }
+
+    logger.warn(
+      `Received message with unrecognized type '${validMessage.type}' Ignoring.`,
+    );
   },
 );
