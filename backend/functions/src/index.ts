@@ -28,7 +28,7 @@ type RequestMetadata = {
 /**
  * MessageType type definition for categorizing messages.
  */
-export type MessageType = "message" | "post" | "echo";
+type MessageType = "message" | "post" | "echo";
 
 /**
  * Message interface definition for strongly-typed message data.
@@ -40,7 +40,7 @@ interface Message {
   userId: string;
   sessionId?: string;
   type: MessageType;
-  [key: string]: any; // Optional: allow additional properties
+  [key: string]: unknown; // Optional: allow additional properties
 }
 
 // Configure global options for v2 functions
@@ -94,13 +94,16 @@ export const health = onRequest(
   },
 );
 
+// Define the database path for the messages collection
+const collection = "/sessions/{sessionId}/messages/{messageId}";
+
 /**
  * Triggered when a new message is created in the database.
  * Logs the message details and allows for further business logic to be implemented.
  * @param event The database event containing the new message data and parameters.
  */
 export const onNewMessageCreated = onValueCreated(
-  "/session/{sessionId}/messages/{messageId}",
+  collection,
   async (
     event: DatabaseEvent<
       DataSnapshot,
@@ -125,5 +128,9 @@ export const onNewMessageCreated = onValueCreated(
     );
 
     // 3. Add your business logic here
+
+    if (messageData.type === "message") {
+      // Handle text messages
+    }
   },
 );
