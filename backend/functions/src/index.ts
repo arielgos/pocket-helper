@@ -600,17 +600,12 @@ export const onNewMessageCreated = onValueCreated(
             ai,
           );
 
-          const imageMessage = `Social media image generated: ${imageUrl}`;
-          await writeResponseToDatabase(validMessage, imageMessage);
+          await writeResponseToDatabase(validMessage, imageUrl);
         } catch (imageError) {
-          logger.error(
-            "Image generation failed, continuing without image",
-            {
-              error: imageError,
-              sessionId: sessionId,
-            },
-            imageError,
-          );
+          logger.error("Image generation failed, continuing without image", {
+            error: imageError,
+            sessionId: sessionId,
+          });
           const fallbackMessage = "Image generation is currently unavailable.";
           await writeResponseToDatabase(validMessage, fallbackMessage);
         }
