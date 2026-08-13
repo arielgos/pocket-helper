@@ -9,8 +9,7 @@ import { initializeApp } from "firebase-admin/app";
 import * as logger from "firebase-functions/logger";
 import type { Response } from "express";
 import { defineString } from "firebase-functions/params";
-import { GoogleGenAI } from "@google/genai";
-import type { Interactions } from "@google/genai";
+import { GoogleGenAI, type Interactions } from "@google/genai";
 import { getDatabase } from "firebase-admin/database";
 import type { DataSnapshot as AdminDataSnapshot } from "firebase-admin/database";
 import { getStorage, getDownloadURL } from "firebase-admin/storage";
@@ -71,6 +70,7 @@ const DEFAULT_USER_ID = "unknown";
 const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
+const PUBLISHING_STATUS_MESSAGE = "Deploy in Progress";
 
 // Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
@@ -86,6 +86,14 @@ const IMAGE_PROMPT_BASE =
 const IMAGE_PROMPT_STYLE =
   ". Style: modern, clean, professional business " +
   "aesthetic with bold typography.";
+
+// Fixed generation parameters for image generation via the Interactions API.
+const IMAGE_GENERATION_CONFIG = {
+  temperature: 1,
+  max_output_tokens: 65536,
+  top_p: 0.95,
+  thinking_level: "minimal",
+};
 
 /**
  * RequestMetadata type definition for logging request information.
@@ -164,6 +172,7 @@ enum MessageType {
   Post = "post",
   Echo = "echo",
   Process = "process",
+  Publish = "publish",
 }
 
 /**
@@ -415,17 +424,10 @@ async function generateImageFromText(
   prompt: string,
   ai: GoogleGenAI,
 ): Promise<Buffer> {
-  const generationConfig = {
-    temperature: 1,
-    max_output_tokens: 65536,
-    top_p: 0.95,
-    thinking_level: "minimal",
-  };
-
   const interaction = await ai.interactions.create({
     model: IMAGE_MODEL_NAME,
     input: prompt,
-    generation_config: generationConfig,
+    generation_config: IMAGE_GENERATION_CONFIG,
     response_modalities: ["image"],
   });
 
@@ -516,6 +518,47 @@ async function generateAndUploadSummaryImage(
 }
 
 /**
+ * Fetches the AI-generated Process results for a session, in chronological
+ * order. Only messages authored by the system are eligible for publishing.
+ * @param {string} sessionId The session ID to fetch messages from.
+ * @return {Promise<SessionMessage[]>} The sorted process-result messages.
+ */
+async function fetchProcessResultMessages(
+  sessionId: string,
+): Promise<SessionMessage[]> {
+  const messagesSnapshot = await fetchSessionMessages(sessionId);
+  const validMessages: SessionMessage[] = [];
+
+  messagesSnapshot.forEach((childSnapshot) => {
+    const msg = childSnapshot.val() as RawMessageData;
+    if (
+      msg &&
+      msg.text &&
+      msg.type === MessageType.Process &&
+      msg.userId === UserType.System
+    ) {
+      validMessages.push({
+        text: msg.text,
+        userId: msg.userId || DEFAULT_USER_ID,
+        createdAt: msg.createdAt || DEFAULT_TIMESTAMP,
+      });
+    }
+  });
+
+  return sortMessagesByTime(validMessages);
+}
+
+/**
+ * Publishes a session by collecting its generated process results.
+ * @param {string} sessionId The session ID to publish.
+ * @return {Promise<void>}
+ */
+async function publishSession(sessionId: string): Promise<void> {
+  const sortedMessages = await fetchProcessResultMessages(sessionId);
+  logger.info(`Session '${sessionId}' messages:`, { sortedMessages });
+}
+
+/**
  * Triggered when a new message is created in the database.
  * Processes user messages and generates AI responses.
  * @param event The database event containing the new message data and parameters.
@@ -538,6 +581,20 @@ export const onNewMessageCreated = onValueCreated(
     const messageId = event.params.messageId;
     const sessionId = event.params.sessionId;
 
+    if (validMessage.type === MessageType.Publish) {
+      logger.info(`Processing PUBLISH message '${messageId}'`);
+      try {
+        await writeResponseToDatabase(validMessage, PUBLISHING_STATUS_MESSAGE);
+        await publishSession(sessionId);
+      } catch (error) {
+        logger.error("Failed to execute PUBLISH", {
+          error,
+          sessionId,
+        });
+      }
+      return;
+    }
+
     const apiKey = geminiApiKey.value();
     if (!apiKey) {
       logger.error("GEMINI_API_KEY is not defined!");
@@ -559,7 +616,7 @@ export const onNewMessageCreated = onValueCreated(
       } catch (error) {
         logger.error("Failed to process message and generate AI response", {
           error,
-          sessionId: sessionId,
+          sessionId,
         });
       }
       return;
@@ -576,7 +633,7 @@ export const onNewMessageCreated = onValueCreated(
       } catch (error) {
         logger.error("Failed to process POST and generate AI response", {
           error,
-          sessionId: sessionId,
+          sessionId,
         });
       }
       return;
@@ -604,7 +661,7 @@ export const onNewMessageCreated = onValueCreated(
         } catch (imageError) {
           logger.error("Image generation failed, continuing without image", {
             error: imageError,
-            sessionId: sessionId,
+            sessionId,
           });
           const fallbackMessage = "Image generation is currently unavailable.";
           await writeResponseToDatabase(validMessage, fallbackMessage);
@@ -614,7 +671,7 @@ export const onNewMessageCreated = onValueCreated(
           "Failed to generate session summary and social media post",
           {
             error,
-            sessionId: sessionId,
+            sessionId,
           },
         );
       }
