@@ -1,6 +1,7 @@
 // Chat and session constants
 export const DEFAULT_SESSION_ID = "default";
 export const MAX_MESSAGES_TO_LOAD = 200;
+export const SYSTEM_USER_ID = "system";
 
 // Command prefixes
 export const COMMAND_PREFIX = "/";
