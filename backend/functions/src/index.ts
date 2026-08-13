@@ -72,11 +72,14 @@ const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
 const PUBLISHING_STATUS_MESSAGE = "Deploy in Progress";
 const PUBLISHING_SUCCESS_MESSAGE = "Session published successfully.";
+const IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
+  "Image generation is currently unavailable.";
 
 // Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
 const IMAGE_FILE_EXTENSION = ".jpg";
 const IMAGE_CONTENT_TYPE = "image/jpeg";
+const FIREBASE_STORAGE_URL_PREFIX = "https://firebasestorage.googleapis.com";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
@@ -95,6 +98,16 @@ const IMAGE_GENERATION_CONFIG = {
   top_p: 0.95,
   thinking_level: "minimal",
 };
+
+// Status placeholders written during Process handling; excluded when
+// collecting the actual generated content for publishing.
+const STATUS_ONLY_MESSAGES = new Set([
+  PUBLISHING_SUCCESS_MESSAGE,
+  PUBLISHING_STATUS_MESSAGE,
+  PROCESSING_STATUS_MESSAGE,
+  GENERATING_IMAGE_MESSAGE,
+  IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+]);
 
 /**
  * RequestMetadata type definition for logging request information.
@@ -532,14 +545,16 @@ async function fetchProcessResultMessages(
 
   messagesSnapshot.forEach((childSnapshot) => {
     const msg = childSnapshot.val() as RawMessageData;
-    if (
+    const isPublishableResult =
       msg &&
       msg.text &&
       msg.type === MessageType.Process &&
-      msg.userId === UserType.System
-    ) {
+      msg.userId === UserType.System &&
+      !STATUS_ONLY_MESSAGES.has(msg.text);
+
+    if (isPublishableResult) {
       validMessages.push({
-        text: msg.text,
+        text: msg.text as string,
         userId: msg.userId || DEFAULT_USER_ID,
         createdAt: msg.createdAt || DEFAULT_TIMESTAMP,
       });
@@ -556,7 +571,18 @@ async function fetchProcessResultMessages(
  */
 async function publishSession(sessionId: string): Promise<void> {
   const sortedMessages = await fetchProcessResultMessages(sessionId);
-  logger.info(`Session '${sessionId}' messages:`, { sortedMessages });
+
+  const contentPost = sortedMessages.find((msg) =>
+    msg.text.includes("## Social Media Post"),
+  );
+  const imagePost = sortedMessages.find((msg) =>
+    msg.text.includes(FIREBASE_STORAGE_URL_PREFIX),
+  );
+
+  logger.info(`Session '${sessionId}' publish results`, {
+    contentPost: contentPost?.text,
+    imagePost: imagePost?.text,
+  });
 }
 
 /**
@@ -665,8 +691,10 @@ export const onNewMessageCreated = onValueCreated(
             error: imageError,
             sessionId,
           });
-          const fallbackMessage = "Image generation is currently unavailable.";
-          await writeResponseToDatabase(validMessage, fallbackMessage);
+          await writeResponseToDatabase(
+            validMessage,
+            IMAGE_GENERATION_UNAVAILABLE_MESSAGE,
+          );
         }
       } catch (error) {
         logger.error(
