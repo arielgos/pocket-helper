@@ -70,7 +70,7 @@ const DEFAULT_USER_ID = "arielgos";
 const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
-const PUBLISHING_STATUS_MESSAGE = "Deploy in Progress";
+const PUBLISHING_STATUS_MESSAGE = "Deploy in Progress...";
 const PUBLISHING_SUCCESS_MESSAGE = "Session published successfully.";
 const IMAGE_GENERATION_UNAVAILABLE_MESSAGE =
   "Image generation is currently unavailable.";
@@ -656,9 +656,7 @@ export const onNewMessageCreated = onValueCreated(
       try {
         await writeResponseToDatabase(validMessage, PUBLISHING_STATUS_MESSAGE);
         const publishUrl = await publishSession(sessionId);
-        const successMessage = publishUrl
-          ? `${PUBLISHING_SUCCESS_MESSAGE} ${publishUrl}`
-          : PUBLISHING_SUCCESS_MESSAGE;
+        const successMessage = `${PUBLISHING_SUCCESS_MESSAGE} ${publishUrl}`;
         await writeResponseToDatabase(validMessage, successMessage);
       } catch (error) {
         logger.error("Failed to execute PUBLISH", {
