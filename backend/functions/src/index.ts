@@ -844,14 +844,10 @@ async function saveLatestJsonFile(
     },
   });
 
-  // Grants public read access via the bucket's ACL, distinct from the
-  // token-based URLs used elsewhere in this file.
-  await latestFile.makePublic();
-
-  const publicUrl = latestFile.publicUrl();
-  logger.info("Made latest.json publicly accessible", {
+  const publicUrl = await getDownloadURL(latestFile);
+  logger.info(`latest.json updated and made public at ${publicUrl}`, {
     bucketName,
-    publicUrl,
+    totalItems: payload.totalItems,
   });
 
   return publicUrl;
