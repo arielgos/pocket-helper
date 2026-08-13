@@ -419,7 +419,7 @@ async function generateImageFromText(
     temperature: 1,
     max_output_tokens: 65536,
     top_p: 0.95,
-    thinkingLevel: "minimal",
+    thinking_level: "minimal",
   };
 
   const interaction = await ai.interactions.create({
