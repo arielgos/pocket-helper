@@ -569,9 +569,10 @@ async function fetchProcessResultMessages(
 /**
  * Publishes a session by collecting its generated process results.
  * @param {string} sessionId The session ID to publish.
- * @return {Promise<void>}
+ * @return {Promise<string | undefined>} The public download URL of the
+ *   saved publish payload, or undefined if there was nothing to publish.
  */
-async function publishSession(sessionId: string): Promise<void> {
+async function publishSession(sessionId: string): Promise<string | undefined> {
   const sortedMessages = await fetchProcessResultMessages(sessionId);
 
   const contentPost = sortedMessages.find((msg) =>
@@ -590,7 +591,7 @@ async function publishSession(sessionId: string): Promise<void> {
     logger.warn(
       `No content or image found for session '${sessionId}' during publish.`,
     );
-    return;
+    return undefined;
   }
 
   const postPayload = {
@@ -606,17 +607,24 @@ async function publishSession(sessionId: string): Promise<void> {
     await jsonFile.save(JSON.stringify(postPayload), {
       contentType: JSON_CONTENT_TYPE,
       metadata: {
-        firebaseStorageDownloadTokens: sessionId,
+        sessionId: sessionId,
+        timestamp: Date.now().toString(),
       },
     });
+
+    // Generates a random download token and builds the public URL.
+    const jsonUrl = await getDownloadURL(jsonFile);
     logger.info(`Publish payload saved for session '${sessionId}'`, {
       jsonFileName,
+      jsonUrl,
     });
+    return jsonUrl;
   } catch (error) {
     logger.error("Failed to save publish payload to storage", {
       error,
       sessionId,
     });
+    return undefined;
   }
 }
 
@@ -647,8 +655,11 @@ export const onNewMessageCreated = onValueCreated(
       logger.info(`Processing PUBLISH message '${messageId}'`);
       try {
         await writeResponseToDatabase(validMessage, PUBLISHING_STATUS_MESSAGE);
-        await publishSession(sessionId);
-        await writeResponseToDatabase(validMessage, PUBLISHING_SUCCESS_MESSAGE);
+        const publishUrl = await publishSession(sessionId);
+        const successMessage = publishUrl
+          ? `${PUBLISHING_SUCCESS_MESSAGE} ${publishUrl}`
+          : PUBLISHING_SUCCESS_MESSAGE;
+        await writeResponseToDatabase(validMessage, successMessage);
       } catch (error) {
         logger.error("Failed to execute PUBLISH", {
           error,
