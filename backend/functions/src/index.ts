@@ -80,6 +80,8 @@ const STORAGE_BUCKET_PATH = "session-summaries";
 const IMAGE_FILE_EXTENSION = ".jpg";
 const IMAGE_CONTENT_TYPE = "image/jpeg";
 const FIREBASE_STORAGE_URL_PREFIX = "https://firebasestorage.googleapis.com";
+const POSTS_STORAGE_PATH = "posts";
+const JSON_CONTENT_TYPE = "application/json";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
@@ -583,6 +585,39 @@ async function publishSession(sessionId: string): Promise<void> {
     contentPost: contentPost?.text,
     imagePost: imagePost?.text,
   });
+
+  if (!contentPost && !imagePost) {
+    logger.warn(
+      `No content or image found for session '${sessionId}' during publish.`,
+    );
+    return;
+  }
+
+  const postPayload = {
+    date: Date.now(),
+    content: contentPost?.text,
+    image: imagePost?.text,
+  };
+
+  try {
+    const bucket = getStorage().bucket();
+    const jsonFileName = `${POSTS_STORAGE_PATH}/${sessionId}.json`;
+    const jsonFile = bucket.file(jsonFileName);
+    await jsonFile.save(JSON.stringify(postPayload), {
+      contentType: JSON_CONTENT_TYPE,
+      metadata: {
+        firebaseStorageDownloadTokens: sessionId,
+      },
+    });
+    logger.info(`Publish payload saved for session '${sessionId}'`, {
+      jsonFileName,
+    });
+  } catch (error) {
+    logger.error("Failed to save publish payload to storage", {
+      error,
+      sessionId,
+    });
+  }
 }
 
 /**
