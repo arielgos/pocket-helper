@@ -336,7 +336,12 @@ function extractValidMessages(snapshot: AdminDataSnapshot): SessionMessage[] {
 
   snapshot.forEach((childSnapshot) => {
     const msg = childSnapshot.val() as RawMessageData;
-    if (msg && msg.text && msg.type !== MessageType.Process) {
+    if (
+      msg &&
+      msg.text &&
+      msg.type !== MessageType.Process &&
+      msg.type !== MessageType.Publish
+    ) {
       messages.push({
         text: msg.text,
         userId: msg.userId || DEFAULT_USER_ID,
