@@ -20,6 +20,7 @@ const FUNCTION_MAX_INSTANCES = 10;
 const GEMINI_MODEL_NAME = "gemini-3.6-flash";
 const IMAGE_MODEL_NAME = "gemini-3.1-flash-lite-image";
 const MESSAGES_COLLECTION_PATH = "/sessions/{sessionId}/messages/{messageId}";
+const STORAGE_TRIGGER_REGION = "us-central1";
 
 // Response constants
 const HTTP_STATUS_OK = 200;
@@ -862,6 +863,7 @@ async function saveLatestJsonFile(
 export const generateLatestJson = onObjectFinalized(
   {
     bucket: POSTS_STORAGE_PATH,
+    region: STORAGE_TRIGGER_REGION,
   },
   async (event: StorageEvent): Promise<void> => {
     const fileName = event.data.name;
