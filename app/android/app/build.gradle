@@ -199,3 +199,16 @@ if (rnVersion < versionToNumber(0, 75, 0)) {
     apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json', { paths: [require.resolve('react-native/package.json')] })"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
     applyNativeModulesAppBuildGradle(project)
 }
+
+// The JS bundle task doesn't declare .env as an input, so Gradle's up-to-date
+// check won't notice env-only changes and will keep reusing a stale bundle
+// (e.g. one built with missing/old EXPO_PUBLIC_* values). Force invalidation.
+tasks.configureEach { t ->
+    if (t.name.startsWith("createBundle") && t.name.endsWith("JsAndAssets")) {
+        def envFiles = [".env", ".env.local", ".env.production", ".env.production.local"]
+            .collect { new File(projectRoot, it) }
+            .findAll { it.exists() }
+        t.inputs.files(envFiles).withPropertyName("envFiles").optional(true)
+    }
+}
+
