@@ -20,7 +20,6 @@ const FUNCTION_MAX_INSTANCES = 10;
 const GEMINI_MODEL_NAME = "gemini-3.6-flash";
 const IMAGE_MODEL_NAME = "gemini-3.1-flash-lite-image";
 const MESSAGES_COLLECTION_PATH = "/sessions/{sessionId}/messages/{messageId}";
-const STORAGE_TRIGGER_REGION = "us-central1";
 
 // Response constants
 const HTTP_STATUS_OK = 200;
@@ -86,7 +85,6 @@ const POSTS_STORAGE_PATH = "posts";
 const JSON_CONTENT_TYPE = "application/json";
 const LATEST_JSON_FILE = "latest.json";
 const CACHE_CONTROL_NO_CACHE = "no-cache, max-age=0";
-const POSTS_STORAGE_BUCKET = "pocket-helper-a4bc4.firebasestorage.app";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
