@@ -815,6 +815,7 @@ async function fetchBucketFileUrls(bucketName: string): Promise<string[]> {
   const [files] = await bucket.getFiles({ prefix: POSTS_FOLDER_PREFIX });
 
   return files
+    .sort((a, b) => b.name.localeCompare(a.name))
     .filter((file) => shouldIncludeFile(file.name))
     .map((file) => file.publicUrl());
 }
