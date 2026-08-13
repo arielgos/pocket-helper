@@ -5,6 +5,7 @@ import {
   DatabaseEvent,
   DataSnapshot,
 } from "firebase-functions/v2/database";
+import { onObjectFinalized, StorageEvent } from "firebase-functions/v2/storage";
 import { initializeApp } from "firebase-admin/app";
 import * as logger from "firebase-functions/logger";
 import type { Response } from "express";
@@ -82,6 +83,8 @@ const IMAGE_CONTENT_TYPE = "image/jpeg";
 const FIREBASE_STORAGE_URL_PREFIX = "https://firebasestorage.googleapis.com";
 const POSTS_STORAGE_PATH = "posts";
 const JSON_CONTENT_TYPE = "application/json";
+const LATEST_JSON_FILE = "latest.json";
+const CACHE_CONTROL_NO_CACHE = "no-cache, max-age=0";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
@@ -755,5 +758,141 @@ export const onNewMessageCreated = onValueCreated(
     logger.warn(
       `Received message with unrecognized type '${validMessage.type}' Ignoring.`,
     );
+  },
+);
+
+/**
+ * Storage metadata for the latest.json file generation.
+ */
+interface LatestJsonPayload {
+  updatedAt: string;
+  totalItems: number;
+  urls: string[];
+}
+
+/**
+ * Checks if the file should trigger the latest.json generation.
+ * Prevents infinite loops by excluding latest.json itself.
+ * @param {string} fileName The name of the file that triggered the event.
+ * @return {boolean} True if the file should trigger generation.
+ */
+function shouldProcessFile(fileName: string): boolean {
+  if (fileName === LATEST_JSON_FILE) {
+    logger.info("Skipping execution: triggered by latest.json update.");
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Filters out non-content files from the bucket file list.
+ * Excludes latest.json and folder objects (ending with '/').
+ * @param {string} fileName The name of the file to check.
+ * @return {boolean} True if the file should be included in the list.
+ */
+function shouldIncludeFile(fileName: string): boolean {
+  return fileName !== LATEST_JSON_FILE && !fileName.endsWith("/");
+}
+
+/**
+ * Fetches all content files from a storage bucket and returns their public URLs.
+ * @param {string} bucketName The name of the storage bucket.
+ * @return {Promise<string[]>} Array of public URLs for all content files.
+ */
+async function fetchBucketFileUrls(bucketName: string): Promise<string[]> {
+  const storage = getStorage();
+  const bucket = storage.bucket(bucketName);
+  const [files] = await bucket.getFiles();
+
+  return files
+    .filter((file) => shouldIncludeFile(file.name))
+    .map((file) => file.publicUrl());
+}
+
+/**
+ * Creates the payload object for latest.json.
+ * @param {string[]} publicUrls Array of public URLs.
+ * @return {LatestJsonPayload} The structured payload object.
+ */
+function createLatestJsonPayload(publicUrls: string[]): LatestJsonPayload {
+  return {
+    updatedAt: new Date().toISOString(),
+    totalItems: publicUrls.length,
+    urls: publicUrls,
+  };
+}
+
+/**
+ * Saves the latest.json file to the storage bucket and makes it publicly accessible.
+ * @param {string} bucketName The name of the storage bucket.
+ * @param {LatestJsonPayload} payload The payload to save.
+ * @return {Promise<string>} The public URL of the saved file.
+ */
+async function saveLatestJsonFile(
+  bucketName: string,
+  payload: LatestJsonPayload,
+): Promise<string> {
+  const storage = getStorage();
+  const bucket = storage.bucket(bucketName);
+  const latestFile = bucket.file(LATEST_JSON_FILE);
+
+  await latestFile.save(JSON.stringify(payload, null, 2), {
+    contentType: JSON_CONTENT_TYPE,
+    resumable: false,
+    metadata: {
+      cacheControl: CACHE_CONTROL_NO_CACHE,
+    },
+  });
+
+  // Grants public read access via the bucket's ACL, distinct from the
+  // token-based URLs used elsewhere in this file.
+  await latestFile.makePublic();
+
+  const publicUrl = latestFile.publicUrl();
+  logger.info("Made latest.json publicly accessible", {
+    bucketName,
+    publicUrl,
+  });
+
+  return publicUrl;
+}
+
+/**
+ * Triggered when a file is finalized (created/updated) in Cloud Storage.
+ * Generates and updates a latest.json file containing all file URLs in the bucket.
+ * Prevents infinite loops by ignoring updates to latest.json itself.
+ * @param event The storage event containing file metadata.
+ */
+export const generateLatestJson = onObjectFinalized(
+  {
+    bucket: POSTS_STORAGE_PATH,
+  },
+  async (event: StorageEvent): Promise<void> => {
+    const fileName = event.data.name;
+    const bucketName = event.data.bucket;
+
+    logger.info("Storage event received", { fileName, bucketName });
+
+    if (!shouldProcessFile(fileName)) {
+      return;
+    }
+
+    try {
+      const publicUrls = await fetchBucketFileUrls(bucketName);
+      const payload = createLatestJsonPayload(publicUrls);
+      const latestJsonUrl = await saveLatestJsonFile(bucketName, payload);
+
+      logger.info(
+        `Successfully updated ${LATEST_JSON_FILE} with ${publicUrls.length} file URLs.`,
+        { bucketName, latestJsonUrl },
+      );
+    } catch (error) {
+      logger.error("Failed to generate latest.json", {
+        error,
+        fileName,
+        bucketName,
+      });
+      throw error;
+    }
   },
 );
