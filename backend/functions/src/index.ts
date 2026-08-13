@@ -820,8 +820,12 @@ async function fetchBucketFileUrls(bucketName: string): Promise<string[]> {
   const [files] = await bucket.getFiles({ prefix: POSTS_FOLDER_PREFIX });
 
   return files
-    .sort((a, b) => b.name.localeCompare(a.name))
     .filter((file) => shouldIncludeFile(file.name))
+    .sort((a, b) => {
+      const aUpdated = new Date(a.metadata.updated ?? 0).getTime();
+      const bUpdated = new Date(b.metadata.updated ?? 0).getTime();
+      return bUpdated - aUpdated;
+    })
     .map((file) => file.publicUrl());
 }
 
