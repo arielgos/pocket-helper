@@ -32,30 +32,37 @@ function toMediaUrl(sourceUrl: string, timestamp: number) {
   return url.toString();
 }
 
+function findSocialPostHeading(lines: string[]) {
+  const getHeadingName = (line: string) =>
+    line
+      .trim()
+      .replace(/^(?:##\s+)?/, "")
+      .replace(/\*\*/g, "")
+      .replace(/:$/, "")
+      .trim()
+      .toLowerCase();
+
+  const linkedInHeadingIndex = lines.findIndex(
+    (line) => getHeadingName(line) === "linkedin / tech twitter post",
+  );
+  if (linkedInHeadingIndex !== -1) return linkedInHeadingIndex;
+
+  return lines.findIndex((line) => {
+    const heading = getHeadingName(line);
+
+    return (
+      heading === "social media post" ||
+      heading === "linkedin / tech twitter post"
+    );
+  });
+}
+
 function getSocialPostTitle(content: string) {
   const lines = content.split(/\r?\n/);
-  const headingIndex = lines.findIndex((line) =>
-    /^##\s+Social Media Post\s*$/i.test(line.trim()),
-  );
+  const headingIndex = findSocialPostHeading(lines);
 
   if (headingIndex === -1) return "Untitled post";
   return lines.slice(headingIndex + 1).find((line) => line.trim())?.trim() ?? "Untitled post";
-}
-
-function removeSocialPostTitle(content: string) {
-  const lines = content.split(/\r?\n/);
-  const headingIndex = lines.findIndex((line) =>
-    /^##\s+Social Media Post\s*$/i.test(line.trim()),
-  );
-
-  if (headingIndex === -1) return content;
-
-  const titleIndex = lines.findIndex(
-    (line, index) => index > headingIndex && line.trim(),
-  );
-
-  if (titleIndex === -1) return content;
-  return lines.slice(0, titleIndex).concat(lines.slice(titleIndex + 1)).join("\n");
 }
 
 function App() {
@@ -185,7 +192,7 @@ function App() {
                     </h2>
                     <div className="markdown-content">
                       <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {removeSocialPostTitle(post.content ?? "(empty post)")}
+                        {post.content ?? "(empty post)"}
                       </ReactMarkdown>
                     </div>
                     {post.image && <img src={post.image} alt={`Post ${index + 1}`} />}
