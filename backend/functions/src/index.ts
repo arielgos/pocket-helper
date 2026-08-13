@@ -71,6 +71,7 @@ const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
 const PUBLISHING_STATUS_MESSAGE = "Deploy in Progress";
+const PUBLISHING_SUCCESS_MESSAGE = "Session published successfully.";
 
 // Storage configuration
 const STORAGE_BUCKET_PATH = "session-summaries";
@@ -586,6 +587,7 @@ export const onNewMessageCreated = onValueCreated(
       try {
         await writeResponseToDatabase(validMessage, PUBLISHING_STATUS_MESSAGE);
         await publishSession(sessionId);
+        await writeResponseToDatabase(validMessage, PUBLISHING_SUCCESS_MESSAGE);
       } catch (error) {
         logger.error("Failed to execute PUBLISH", {
           error,
