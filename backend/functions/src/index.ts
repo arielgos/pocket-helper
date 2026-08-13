@@ -86,6 +86,7 @@ const POSTS_STORAGE_PATH = "posts";
 const JSON_CONTENT_TYPE = "application/json";
 const LATEST_JSON_FILE = "latest.json";
 const CACHE_CONTROL_NO_CACHE = "no-cache, max-age=0";
+const POSTS_STORAGE_BUCKET = "pocket-helper-a4bc4.firebasestorage.app";
 
 // Image generation configuration
 const MAX_IMAGE_PROMPT_LENGTH = 500;
@@ -862,7 +863,7 @@ async function saveLatestJsonFile(
  */
 export const generateLatestJson = onObjectFinalized(
   {
-    bucket: POSTS_STORAGE_PATH,
+    bucket: POSTS_STORAGE_BUCKET,
     region: STORAGE_TRIGGER_REGION,
   },
   async (event: StorageEvent): Promise<void> => {
