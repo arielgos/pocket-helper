@@ -80,7 +80,11 @@ button:disabled { cursor: wait; opacity: 0.6; }
 .post { padding: 18px; background: #101512; border: 1px solid #344339; border-left: 3px solid #8bd49a; border-radius: 3px; animation: post-appear 420ms ease-out both; }
 .post-header { display: flex; justify-content: space-between; gap: 16px; margin-bottom: 16px; color: #8bd49a; font-size: 0.85rem; }
 .post-header time { color: #91a295; }
-.post-title { margin: 0 0 18px; color: #f0c96b; font-family: inherit; font-size: 1.75rem; line-height: 1.3; }
+.post-title { margin: 0 0 18px; color: #f0c96b; font-family: inherit; font-size: 1.75rem; font-weight: 700; line-height: 1.3; }
+.post-title p { margin: 0; }
+.post-title strong { color: #f0c96b; }
+.post-title em { color: #f6d98c; }
+.post-title a { color: #9ac9f1; }
 .post-body pre { max-width: 100%; margin: 0 0 16px; overflow: auto; color: #d7e0d8; white-space: pre-wrap; line-height: 1.55; }
 .markdown-content { color: #d7e0d8; line-height: 1.6; }
 .markdown-content > :first-child { margin-top: 0; }

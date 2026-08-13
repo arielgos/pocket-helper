@@ -23,7 +23,14 @@ export function PostCard({ post, index }: PostCardProps) {
         )}
       </div>
       <div className="post-body">
-        <h2 className="post-title">{getPostTitle(post.content, t("untitledPost"))}</h2>
+        <div className="post-title" aria-label={t("untitledPost")}>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            components={{ p: ({ children }) => <>{children}</> }}
+          >
+            {getPostTitle(post.content, t("untitledPost"))}
+          </ReactMarkdown>
+        </div>
         <div className="markdown-content">
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
             {post.content ?? t("emptyPost")}
