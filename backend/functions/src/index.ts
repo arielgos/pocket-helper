@@ -64,6 +64,8 @@ Please provide your response in the following format:
 [Your comprehensive summary here]
 
 ## Social Media Post
+[Add a professional, engaging social media title here]
+
 [Your engaging social media post here, including relevant hashtags]`;
 
 // Default values
