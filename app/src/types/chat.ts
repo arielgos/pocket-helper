@@ -3,6 +3,7 @@ export enum MessageType {
   Post = "post",
   Echo = "echo",
   Process = "process",
+  Publish = "publish",
 }
 
 export type ChatMessage = {

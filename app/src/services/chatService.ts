@@ -23,6 +23,7 @@ function parseMessageType(rawType: unknown): MessageType {
     post: MessageType.Post,
     echo: MessageType.Echo,
     process: MessageType.Process,
+    publish: MessageType.Publish,
   };
 
   return typeMap[rawType] ?? MessageType.Message;

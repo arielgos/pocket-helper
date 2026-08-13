@@ -180,3 +180,17 @@ export async function handleProcessCommand(
   params.setInputValue("");
   params.setErrorMessage(null);
 }
+
+export async function handlePublishCommand(
+  params: CommandHandlerParams,
+): Promise<void> {
+  await sendChatMessage({
+    text: "",
+    userId: params.userId,
+    sessionId: params.currentSessionId,
+    type: MessageType.Publish,
+  });
+  
+  params.setInputValue("");
+  params.setErrorMessage(null);
+}

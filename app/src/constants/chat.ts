@@ -13,9 +13,11 @@ export const COMMAND_SESSION = "/session";
 export const COMMAND_REMOVE = "/remove";
 export const COMMAND_POST = "/post";
 export const COMMAND_PROCESS = "/process";
+export const COMMAND_PUBLISH = "/publish";
 
 // Command lengths (for substring parsing)
 export const COMMAND_ECHO_LENGTH = 6;
 export const COMMAND_SESSION_LENGTH = 9;
 export const COMMAND_POST_LENGTH = 6;
 export const COMMAND_PROCESS_LENGTH = 9;
+export const COMMAND_PUBLISH_LENGTH = 9;

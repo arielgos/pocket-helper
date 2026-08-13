@@ -54,6 +54,11 @@ export function CommandHelpModal({ visible, onClose }: CommandHelpModalProps) {
                 <Text style={styles.commandDescription}>{t("commands.process.description")}</Text>
               </View>
               
+              <View style={styles.commandItem}>
+                <Text style={styles.commandUsage}>{t("commands.publish.usage")}</Text>
+                <Text style={styles.commandDescription}>{t("commands.publish.description")}</Text>
+              </View>
+              
               {/* Session Management */}
               <Text style={styles.sectionTitle}>Session Management</Text>
               

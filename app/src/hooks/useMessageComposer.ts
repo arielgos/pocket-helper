@@ -14,6 +14,7 @@ import {
   COMMAND_REMOVE,
   COMMAND_POST,
   COMMAND_PROCESS,
+  COMMAND_PUBLISH,
 } from "../constants/chat";
 import {
   handleHelpCommand,
@@ -24,6 +25,7 @@ import {
   handleRemoveCommand,
   handlePostCommand,
   handleProcessCommand,
+  handlePublishCommand,
 } from "./commandHandlers";
 
 export function useMessageComposer(userId: string) {
@@ -98,6 +100,11 @@ export function useMessageComposer(userId: string) {
 
       if (command === COMMAND_PROCESS) {
         await handleProcessCommand(commandParams);
+        return;
+      }
+
+      if (command === COMMAND_PUBLISH) {
+        await handlePublishCommand(commandParams);
         return;
       }
 

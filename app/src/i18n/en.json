@@ -80,6 +80,10 @@
     "process": {
       "description": "Create a process marker with timestamp only",
       "usage": "/process"
+    },
+    "publish": {
+      "description": "Create a publish marker with timestamp only",
+      "usage": "/publish"
     }
   },
   "prompts": {
