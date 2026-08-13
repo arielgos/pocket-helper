@@ -66,7 +66,7 @@ Please provide your response in the following format:
 [Your engaging social media post here, including relevant hashtags]`;
 
 // Default values
-const DEFAULT_USER_ID = "unknown";
+const DEFAULT_USER_ID = "arielgos";
 const DEFAULT_TIMESTAMP = 0;
 const PROCESSING_STATUS_MESSAGE = "Processing...";
 const GENERATING_IMAGE_MESSAGE = "Generating social media image...";
