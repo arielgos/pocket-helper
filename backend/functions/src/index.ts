@@ -862,10 +862,6 @@ async function saveLatestJsonFile(
  * @param event The storage event containing file metadata.
  */
 export const generateLatestJson = onObjectFinalized(
-  {
-    bucket: POSTS_STORAGE_BUCKET,
-    region: STORAGE_TRIGGER_REGION,
-  },
   async (event: StorageEvent): Promise<void> => {
     const fileName = event.data.name;
     const bucketName = event.data.bucket;
