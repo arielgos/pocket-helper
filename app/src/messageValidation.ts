@@ -25,6 +25,34 @@ export type MessageValidationResult = {
 
 const geminiApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const geminiModel = process.env.EXPO_PUBLIC_GEMINI_MODEL ?? "gemini-3.5-flash";
+const localModelUrl = process.env.EXPO_PUBLIC_LOCAL_LLM_MODEL_URL;
+
+let localModelDownloadPromise: Promise<void> | null = null;
+
+// Fetches the on-device .task model over HTTP on first use so local validation
+// can run without a bundled asset or a manual adb push. Memoized per process;
+// resets on failure so a later message can retry the download.
+function ensureLocalModelDownloaded(
+  nativeModule: NonNullable<ReturnType<typeof getNativeLocalMessageValidator>>,
+): Promise<void> {
+  if (!localModelUrl) {
+    return Promise.resolve();
+  }
+
+  if (!localModelDownloadPromise) {
+    localModelDownloadPromise = (async () => {
+      const ready = await nativeModule.isModelReady();
+      if (!ready) {
+        await nativeModule.downloadModel(localModelUrl);
+      }
+    })().catch((error) => {
+      localModelDownloadPromise = null;
+      throw error;
+    });
+  }
+
+  return localModelDownloadPromise;
+}
 
 function normalizeJsonPayload(value: string): string {
   const codeFenceMatch = value.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
@@ -60,10 +88,25 @@ export async function validateMessageUnderstandability(
   if (Platform.OS === 'android') {
     const nativeModule = getNativeLocalMessageValidator();
     if (nativeModule) {
-      return nativeModule.validateMessage(message);
+      try {
+        await ensureLocalModelDownloaded(nativeModule);
+        return await nativeModule.validateMessage(message);
+      } catch (error) {
+        // No on-device model deployed yet (or it failed) — fall back to Gemini.
+        console.warn(
+          'Local message validator unavailable, falling back to Gemini.',
+          error,
+        );
+      }
     }
   }
 
+  return validateWithGemini(message);
+}
+
+async function validateWithGemini(
+  message: string,
+): Promise<MessageValidationResult> {
   if (!geminiApiKey) {
     throw new Error(t("errors.missingGeminiApiKey"));
   }

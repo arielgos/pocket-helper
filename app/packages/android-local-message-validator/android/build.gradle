@@ -1,26 +1,36 @@
-plugins {
-  id 'com.android.library'
-  id 'org.jetbrains.kotlin.android'
-  // id 'expo-module-gradle-plugin'
-}
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
 
 group = 'expo.modules.localmessagevalidator'
 version = '1.0.0'
 
+def expoModulesCorePlugin = new File(project(":expo-modules-core").projectDir.absolutePath, "ExpoModulesCorePlugin.gradle")
+apply from: expoModulesCorePlugin
+applyKotlinExpoModulesCorePlugin()
+useCoreDependencies()
+useDefaultAndroidSdkVersions()
+
 android {
   namespace 'expo.modules.localmessagevalidator'
-  compileSdkVersion 34
+  compileSdkVersion safeExtGet("compileSdkVersion", 34)
 
   defaultConfig {
-    minSdkVersion 24
+    minSdkVersion safeExtGet("minSdkVersion", 24)
   }
 
   kotlinOptions {
     jvmTarget = '17'
   }
+
+  // Keep the bundled .task model uncompressed so it can be mmap'd from the APK/assets.
+  aaptOptions {
+    noCompress "task"
+  }
 }
+
 
 dependencies {
   implementation 'com.google.mlkit:language-id:17.0.6'
   implementation 'com.google.mediapipe:tasks-genai:0.10.27'
 }
+
