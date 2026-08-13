@@ -82,6 +82,7 @@ const IMAGE_FILE_EXTENSION = ".jpg";
 const IMAGE_CONTENT_TYPE = "image/jpeg";
 const FIREBASE_STORAGE_URL_PREFIX = "https://firebasestorage.googleapis.com";
 const POSTS_STORAGE_PATH = "posts";
+const POSTS_FOLDER_PREFIX = `${POSTS_STORAGE_PATH}/`;
 const JSON_CONTENT_TYPE = "application/json";
 const LATEST_JSON_FILE = "latest.json";
 const CACHE_CONTROL_NO_CACHE = "no-cache, max-age=0";
@@ -772,7 +773,7 @@ interface LatestJsonPayload {
 
 /**
  * Checks if the file should trigger the latest.json generation.
- * Prevents infinite loops by excluding latest.json itself.
+ * Only files inside the posts/ folder are eligible, excluding latest.json itself.
  * @param {string} fileName The name of the file that triggered the event.
  * @return {boolean} True if the file should trigger generation.
  */
@@ -781,6 +782,14 @@ function shouldProcessFile(fileName: string): boolean {
     logger.info("Skipping execution: triggered by latest.json update.");
     return false;
   }
+
+  if (!fileName.startsWith(POSTS_FOLDER_PREFIX)) {
+    logger.info("Skipping execution: change outside the posts/ folder.", {
+      fileName,
+    });
+    return false;
+  }
+
   return true;
 }
 
@@ -795,14 +804,15 @@ function shouldIncludeFile(fileName: string): boolean {
 }
 
 /**
- * Fetches all content files from a storage bucket and returns their public URLs.
+ * Fetches all content files from the posts/ folder in a storage bucket and
+ * returns their public URLs.
  * @param {string} bucketName The name of the storage bucket.
  * @return {Promise<string[]>} Array of public URLs for all content files.
  */
 async function fetchBucketFileUrls(bucketName: string): Promise<string[]> {
   const storage = getStorage();
   const bucket = storage.bucket(bucketName);
-  const [files] = await bucket.getFiles();
+  const [files] = await bucket.getFiles({ prefix: POSTS_FOLDER_PREFIX });
 
   return files
     .filter((file) => shouldIncludeFile(file.name))
