@@ -78,74 +78,31 @@ The Android validator package lives in:
 It uses:
 
 - ML Kit language identification
-- MediaPipe LLM Inference for the on-device model
+- ML Kit GenAI Prompt API, which runs **Gemini Nano** on-device via Android's
+  AICore system service
 
 This native module will only be available in a custom Android development build
 or a production build that includes the package. Expo Go will not load it.
 
-### Setting up the on-device model
+### On-device model availability
 
-If the model isn't available, validation automatically falls back to the
-Gemini API (see `src/messageValidation.ts`) instead of failing. There are three
-ways to make on-device validation actually run, in order of effort:
+Unlike a bundled/downloaded model file, Gemini Nano is managed entirely by the
+OS: AICore downloads and updates the model itself, so there's nothing to bundle
+or host. Requirements:
 
-0. **Simplest: download it at runtime (no dev-machine step, no bundling).**
-   Host a `.task` file somewhere reachable over plain HTTPS (no auth headers
-   supported), e.g. Firebase Storage/GCS/S3 with a public read URL, then set:
+- Android API level 26+ (the app's `minSdkVersion` is set to 26 for this)
+- A device with AICore/Gemini Nano support (mainly recent Pixel devices), with
+  a **locked bootloader** — unlocked bootloaders are unsupported
+- The device must have downloaded AICore's latest configuration at least once
+  (usually automatic within a few minutes to hours of having network access)
 
-   ```bash
-   EXPO_PUBLIC_LOCAL_LLM_MODEL_URL=https://your-host/message-validator.task
-   ```
-
-   in `.env`. On the first call to `validateMessageUnderstandability` on
-   Android, the app calls the native `isModelReady()`/`downloadModel(url)`
-   functions to fetch it once into the app's internal storage
-   (`packages/android-local-message-validator`'s `LocalMessageValidatorModule.kt`)
-   — no `adb push`, no bundled asset. Note this won't work directly with gated
-   Hugging Face URLs, which require an `Authorization` header; host a copy
-   yourself or use option 2 below.
-
-1. **Bundle a quantized MediaPipe LLM `.task` file as a build-time asset:**
-
-   - `packages/android-local-message-validator/android/src/main/assets/message-validator.task`
-
-   On first use, the native module copies it from assets into the app's
-   internal storage automatically — no manual `adb push` needed after the
-   initial setup.
-
-Two ways to get a `.task` file to use with option 1 (asset) or to host
-yourself for option 0, both documented in the
-[MediaPipe LLM Inference guide](https://developers.google.com/edge/mediapipe/solutions/genai/llm_inference):
-
-2. **Recommended: download a pre-converted community model.** Browse
-   [LiteRT Community on Hugging Face](https://huggingface.co/litert-community)
-   (e.g. `litert-community/Gemma3-1B-IT`), accept the model's license, create a
-   read-scoped Hugging Face access token, then run:
-
-   ```bash
-   HF_TOKEN=hf_xxx npm run model:download -- litert-community/Gemma3-1B-IT <exact-filename-from-repo>.task
-   ```
-
-   Check the repo's "Files" tab for the exact filename (there are usually CPU
-   and GPU quantized variants).
-
-3. **Advanced: convert your own PyTorch checkpoint** using the
-   [AI Edge Torch Generative API](https://github.com/google-ai-edge/litert-torch/tree/main/litert_torch/generative)
-   to produce a `.tflite` file, then bundle it with its tokenizer:
-
-   ```bash
-   pip install mediapipe
-   npm run model:bundle -- \
-     --tflite-model /path/to/model.tflite \
-     --tokenizer-model /path/to/tokenizer.model \
-     --start-token "<bos>" \
-     --stop-token "<eos>" \
-     --output packages/android-local-message-validator/android/src/main/assets/message-validator.task
-   ```
-
-After either option, rebuild with `npx expo run:android`. The `.task` file is
-gitignored since it's a large binary — each developer/CI job needs to run one
-of the steps above once.
+On first use, `LocalMessageValidatorModule.kt` calls `isModelReady()` /
+`downloadModel()`, which check the feature status via
+`GenerativeModel.checkStatus()` and trigger `GenerativeModel.download()` if the
+feature is downloadable but not yet available. If Gemini Nano is unavailable or
+the module isn't present (e.g. Expo Go, non-Pixel devices, unlocked
+bootloader), validation automatically falls back to the Gemini API (see
+`src/messageValidation.ts`) instead of failing.
 
 ## Firebase data shape
 

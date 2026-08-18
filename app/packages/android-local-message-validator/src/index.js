@@ -17,13 +17,13 @@ async function validateMessage(message) {
   return nativeModule.validateMessage(message);
 }
 
-async function downloadModel(url) {
+async function downloadModel() {
   const nativeModule = getNativeLocalMessageValidator();
   if (!nativeModule) {
     throw new Error('LocalMessageValidator native module is unavailable.');
   }
 
-  return nativeModule.downloadModel(url);
+  return nativeModule.downloadModel();
 }
 
 async function isModelReady() {

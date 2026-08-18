@@ -1,50 +1,26 @@
 package expo.modules.localmessagevalidator
 
-import android.content.Context
 import android.util.Log
 import com.google.android.gms.tasks.Tasks
+import com.google.mlkit.genai.common.DownloadStatus
+import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerativeModel
 import com.google.mlkit.nl.languageid.LanguageIdentification
-import com.google.mediapipe.tasks.genai.llminference.LlmInference
-import com.google.mediapipe.tasks.genai.llminference.LlmInferenceSession
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.runBlocking
 import org.json.JSONObject
-import java.io.File
-import java.io.FileOutputStream
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 
 class LocalMessageValidatorModule : Module() {
   private val languageIdentifier by lazy {
     LanguageIdentification.getClient()
   }
 
-  private val modelPath by lazy {
-    resolveModelPath()
-  }
-
-  private val llmInference by lazy {
-    LlmInference.createFromOptions(
-      requireNotNull(appContext.reactContext) { "React context is not available." },
-      LlmInference.LlmInferenceOptions.builder()
-        .setModelPath(modelPath)
-        .setMaxTokens(512)
-        .setMaxTopK(32)
-        .build()
-    )
-  }
-
-  // A new session per call: sessions accumulate query history, and reusing one
-  // across independent validations exhausts the token budget over time.
-  private fun newLlmSession(): LlmInferenceSession {
-    return LlmInferenceSession.createFromOptions(
-      llmInference,
-      LlmInferenceSession.LlmInferenceSessionOptions.builder()
-        .setTopK(32)
-        .setTemperature(0.2f)
-        .build()
-    )
+  // Gemini Nano client, served on-device by Android's AICore system service.
+  private val generativeModel: GenerativeModel by lazy {
+    Generation.getClient()
   }
 
   override fun definition() = ModuleDefinition {
@@ -54,8 +30,8 @@ class LocalMessageValidatorModule : Module() {
       validateMessageInternal(message)
     }
 
-    AsyncFunction("downloadModel") { url: String ->
-      downloadModelInternal(url)
+    AsyncFunction("downloadModel") {
+      downloadModelInternal()
     }
 
     AsyncFunction("isModelReady") {
@@ -63,21 +39,20 @@ class LocalMessageValidatorModule : Module() {
     }
   }
 
-  private fun validateMessageInternal(message: String): Map<String, Any> {
+  private fun validateMessageInternal(message: String): Map<String, Any> = runBlocking {
     val trimmed = message.trim()
     require(trimmed.isNotEmpty()) { "Message cannot be empty." }
 
     val language = Tasks.await(languageIdentifier.identifyLanguage(trimmed))
     val prompt = buildPrompt(trimmed, language)
 
-    val response = newLlmSession().use { session ->
-      session.addQueryChunk(prompt)
-      session.generateResponse()
-    }
-    Log.d("LocalMessageValidator", "Raw model response: $response")
-    val parsed = parseResponse(response)
+    val response = generativeModel.generateContent(prompt)
+    val text = response.candidates.firstOrNull()?.text
+      ?: throw IllegalStateException("Gemini Nano returned an empty response.")
+    Log.d("LocalMessageValidator", "Raw model response: $text")
+    val parsed = parseResponse(text)
 
-    return mapOf(
+    mapOf(
       "understandable" to parsed.getBoolean("understandable"),
       "reason" to parsed.getString("reason"),
       "language" to language
@@ -134,95 +109,31 @@ class LocalMessageValidatorModule : Module() {
     }
   }
 
-  private fun resolveModelPath(): String {
-    val context = requireNotNull(appContext.reactContext) { "React context is not available." }
-    val storageDir = File(context.filesDir, "local-llm")
-    if (!storageDir.exists()) {
-      storageDir.mkdirs()
-    }
-
-    val modelFile = File(storageDir, MODEL_FILE_NAME)
-    if (!modelFile.exists()) {
-      copyModelFromAssets(context, modelFile)
-    }
-
-    if (!modelFile.exists()) {
-      throw IllegalStateException(
-        "Missing local model. Bundle a quantized .task model at " +
-          "android/app/src/main/assets/$MODEL_FILE_NAME (it is copied to " +
-          "${modelFile.absolutePath} automatically on first use), or place it there manually."
-      )
-    }
-
-    return modelFile.absolutePath
+  private fun isModelReadyInternal(): Boolean = runBlocking {
+    generativeModel.checkStatus() == FeatureStatus.AVAILABLE
   }
 
-  // Copies the model out of APK assets once; silently no-ops if it wasn't bundled.
-  private fun copyModelFromAssets(context: Context, destination: File) {
-    try {
-      context.assets.open(MODEL_FILE_NAME).use { input ->
-        FileOutputStream(destination).use { output ->
-          input.copyTo(output)
+  // Triggers AICore's managed download of Gemini Nano; no-op if already available.
+  private fun downloadModelInternal(): Map<String, Any> = runBlocking {
+    val status = generativeModel.checkStatus()
+    if (status == FeatureStatus.UNAVAILABLE) {
+      throw IllegalStateException("Gemini Nano is not supported on this device.")
+    }
+
+    var ready = status == FeatureStatus.AVAILABLE
+    if (!ready) {
+      generativeModel.download().collect { downloadStatus ->
+        when (downloadStatus) {
+          is DownloadStatus.DownloadCompleted -> ready = true
+          is DownloadStatus.DownloadFailed -> throw IllegalStateException(
+            "Gemini Nano download failed: ${downloadStatus.e.message}",
+            downloadStatus.e
+          )
+          else -> Unit
         }
       }
-    } catch (e: IOException) {
-      destination.delete()
-    }
-  }
-
-  private fun modelFile(context: Context): File {
-    return File(File(context.filesDir, "local-llm"), MODEL_FILE_NAME)
-  }
-
-  private fun isModelReadyInternal(): Boolean {
-    val context = requireNotNull(appContext.reactContext) { "React context is not available." }
-    return modelFile(context).exists()
-  }
-
-  // Fetches the .task model over HTTP so the local validation flow can work
-  // without bundling the (large) model in the APK or pushing it via adb.
-  private fun downloadModelInternal(url: String): Map<String, Any> {
-    val context = requireNotNull(appContext.reactContext) { "React context is not available." }
-    val storageDir = File(context.filesDir, "local-llm")
-    if (!storageDir.exists()) {
-      storageDir.mkdirs()
     }
 
-    val destination = modelFile(context)
-    val tempFile = File(storageDir, "$MODEL_FILE_NAME.part")
-
-    val connection = URL(url).openConnection() as HttpURLConnection
-    connection.connectTimeout = 30_000
-    connection.readTimeout = 30_000
-
-    try {
-      connection.connect()
-      val responseCode = connection.responseCode
-      if (responseCode !in 200..299) {
-        throw IllegalStateException("Failed to download model: HTTP $responseCode from $url")
-      }
-
-      connection.inputStream.use { input ->
-        FileOutputStream(tempFile).use { output ->
-          input.copyTo(output)
-        }
-      }
-    } finally {
-      connection.disconnect()
-    }
-
-    if (!tempFile.renameTo(destination)) {
-      tempFile.copyTo(destination, overwrite = true)
-      tempFile.delete()
-    }
-
-    return mapOf(
-      "path" to destination.absolutePath,
-      "bytes" to destination.length()
-    )
-  }
-
-  companion object {
-    private const val MODEL_FILE_NAME = "message-validator.task"
+    mapOf("ready" to ready)
   }
 }

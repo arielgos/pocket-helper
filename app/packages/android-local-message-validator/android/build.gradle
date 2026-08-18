@@ -15,22 +15,18 @@ android {
   compileSdkVersion safeExtGet("compileSdkVersion", 34)
 
   defaultConfig {
-    minSdkVersion safeExtGet("minSdkVersion", 24)
+    // ML Kit GenAI Prompt API (Gemini Nano / AICore) requires API 26+.
+    minSdkVersion safeExtGet("minSdkVersion", 26)
   }
 
   kotlinOptions {
     jvmTarget = '17'
-  }
-
-  // Keep the bundled .task model uncompressed so it can be mmap'd from the APK/assets.
-  aaptOptions {
-    noCompress "task"
   }
 }
 
 
 dependencies {
   implementation 'com.google.mlkit:language-id:17.0.6'
-  implementation 'com.google.mediapipe:tasks-genai:0.10.27'
+  implementation 'com.google.mlkit:genai-prompt:1.0.0-beta2'
 }
 

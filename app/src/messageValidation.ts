@@ -25,25 +25,19 @@ export type MessageValidationResult = {
 
 const geminiApiKey = process.env.EXPO_PUBLIC_GEMINI_API_KEY;
 const geminiModel = process.env.EXPO_PUBLIC_GEMINI_MODEL ?? "gemini-3.5-flash";
-const localModelUrl = process.env.EXPO_PUBLIC_LOCAL_LLM_MODEL_URL;
 
 let localModelDownloadPromise: Promise<void> | null = null;
 
-// Fetches the on-device .task model over HTTP on first use so local validation
-// can run without a bundled asset or a manual adb push. Memoized per process;
-// resets on failure so a later message can retry the download.
+// Ensures Gemini Nano is downloaded via Android's AICore service on first use.
+// Memoized per process; resets on failure so a later message can retry.
 function ensureLocalModelDownloaded(
   nativeModule: NonNullable<ReturnType<typeof getNativeLocalMessageValidator>>,
 ): Promise<void> {
-  if (!localModelUrl) {
-    return Promise.resolve();
-  }
-
   if (!localModelDownloadPromise) {
     localModelDownloadPromise = (async () => {
       const ready = await nativeModule.isModelReady();
       if (!ready) {
-        await nativeModule.downloadModel(localModelUrl);
+        await nativeModule.downloadModel();
       }
     })().catch((error) => {
       localModelDownloadPromise = null;

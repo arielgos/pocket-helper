@@ -3,7 +3,4 @@ node_modules
 .env
 dist
 
-# On-device LLM model, fetched/bundled via scripts/download-local-llm-model.sh
-# or scripts/convert-local-llm-model.py — too large to commit.
-packages/android-local-message-validator/android/src/main/assets/*.task
 packages/android-local-message-validator/android/build/

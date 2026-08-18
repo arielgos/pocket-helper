@@ -8,9 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit",
-    "model:download": "bash scripts/download-local-llm-model.sh",
-    "model:bundle": "python3 scripts/convert-local-llm-model.py"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@arielgos/android-local-message-validator": "file:./packages/android-local-message-validator",

@@ -5,13 +5,12 @@ export type LocalValidationResult = {
 };
 
 export type LocalModelDownloadResult = {
-  path: string;
-  bytes: number;
+  ready: boolean;
 };
 
 export declare function getNativeLocalMessageValidator(): {
   validateMessage(message: string): Promise<LocalValidationResult>;
-  downloadModel(url: string): Promise<LocalModelDownloadResult>;
+  downloadModel(): Promise<LocalModelDownloadResult>;
   isModelReady(): Promise<boolean>;
 } | null;
 
@@ -19,8 +18,6 @@ export declare function validateMessage(
   message: string
 ): Promise<LocalValidationResult>;
 
-export declare function downloadModel(
-  url: string
-): Promise<LocalModelDownloadResult>;
+export declare function downloadModel(): Promise<LocalModelDownloadResult>;
 
 export declare function isModelReady(): Promise<boolean>;
