@@ -21,6 +21,10 @@ android {
 
   kotlinOptions {
     jvmTarget = '17'
+    // ML Kit's genai-prompt/genai-common jars ship Kotlin 2.2 metadata; the
+    // project's Kotlin compiler (1.9) can still read/use it, it just needs to
+    // skip the version gate since these are plain stdlib-level constructs.
+    freeCompilerArgs += ["-Xskip-metadata-version-check"]
   }
 }
 
