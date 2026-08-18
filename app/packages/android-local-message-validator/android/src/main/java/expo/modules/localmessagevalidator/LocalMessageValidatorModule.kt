@@ -6,6 +6,8 @@ import com.google.mlkit.genai.common.DownloadStatus
 import com.google.mlkit.genai.common.FeatureStatus
 import com.google.mlkit.genai.prompt.Generation
 import com.google.mlkit.genai.prompt.GenerativeModel
+import com.google.mlkit.genai.prompt.TextPart
+import com.google.mlkit.genai.prompt.generateContentRequest
 import com.google.mlkit.nl.languageid.LanguageIdentification
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
@@ -46,7 +48,13 @@ class LocalMessageValidatorModule : Module() {
     val language = Tasks.await(languageIdentifier.identifyLanguage(trimmed))
     val prompt = buildPrompt(trimmed, language)
 
-    val response = generativeModel.generateContent(prompt)
+    // Low temperature and a single candidate keep this classification task
+    // deterministic; Nano's default sampling is too random for consistent judging.
+    val request = generateContentRequest(TextPart(prompt)) {
+      temperature = 0.1f
+      candidateCount = 1
+    }
+    val response = generativeModel.generateContent(request)
     val text = response.candidates.firstOrNull()?.text
       ?: throw IllegalStateException("Gemini Nano returned an empty response.")
     Log.d("LocalMessageValidator", "Raw model response: $text")
@@ -59,13 +67,17 @@ class LocalMessageValidatorModule : Module() {
     )
   }
 
+  // Gemini Nano is a small model that's easily confused by long, undelimited
+  // prompts — ## section headers keep instructions, examples, and the actual
+  // message clearly separated so it doesn't blend them together.
   private fun buildPrompt(message: String, language: String): String {
     return """
-      You are a strict message clarity checker for a chat app. You must actually
-      judge each message individually - do not default to true.
-      Respond with ONLY compact JSON, no prose, no markdown fences:
-      {"understandable": boolean, "reason": string}
+      ## Instructions
+      Judge ONLY the message under "## Message to judge" below on its own merits.
+      Do not default to true. Respond with ONLY compact JSON, no prose, no
+      markdown fences: {"understandable": boolean, "reason": string}
 
+      ## Rules
       Mark understandable=false when the message:
       - Is empty, only punctuation/whitespace, or a single meaningless word
       - Is a sentence fragment missing a subject or verb
@@ -75,14 +87,14 @@ class LocalMessageValidatorModule : Module() {
       Mark understandable=true when the message stands on its own, even if short
       (e.g. "Hi", "Thanks!", "Meeting at 3pm").
 
-      Examples:
+      ## Examples
       Message: "the" -> {"understandable": false, "reason": "Single word with no meaning on its own."}
       Message: "asdkj skjdf" -> {"understandable": false, "reason": "Not real words."}
       Message: "fix that thing from before" -> {"understandable": false, "reason": "Refers to unspecified earlier context."}
       Message: "Can we meet tomorrow at noon?" -> {"understandable": true, "reason": "Clear, complete question."}
       Message: "Thanks!" -> {"understandable": true, "reason": "Short but complete on its own."}
 
-      Now judge this message.
+      ## Message to judge
       Detected language: $language
       Message: "$message"
     """.trimIndent()
